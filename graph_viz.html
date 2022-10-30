@@ -2,121 +2,14 @@
 <html>
     <body>
         <div id="content">
-            <svg width="2500" height="2500">
+            <svg width="2000" height="2000">
                 <g class="links"></g>
                 <g class="nodes"></g>
             </svg>
         </div>
         <script src="https://d3js.org/d3.v7.min.js"></script>
         <link rel="stylesheet" href="style.css" />
-        <script type="module">
-            var width = 2500,
-                height = 2500;
-
-            var num_nodes = 100;
-            var name_to_index = {};
-            var curr_index = 0;
-            var nodes = [];
-            var links = [];
-
-            d3.csv("/data/investments.csv").then(function (data) {
-                for (var i = 0; i < data.length; i++) {
-                    let company_name = data[i].company_name;
-                    let investor_name = data[i].investor_name;
-                    if (!(company_name in name_to_index)) {
-                        name_to_index[company_name] = curr_index;
-                        nodes.push({ name: company_name });
-                        curr_index += 1;
-                    }
-                    if (!(investor_name in name_to_index)) {
-                        name_to_index[investor_name] = curr_index;
-                        nodes.push({ name: investor_name });
-                        curr_index += 1;
-                    }
-                    if (curr_index >= num_nodes) {
-                        console.log(name_to_index);
-                        console.log(nodes);
-                        break;
-                    }
-                }
-            });
-
-            d3.csv("/data/investments.csv").then(function (data) {
-                for (var i = 0; i < data.length; i++) {
-                    let company_name = data[i].company_name;
-                    let investor_name = data[i].investor_name;
-                    if (
-                        company_name in name_to_index &&
-                        investor_name in name_to_index
-                    ) {
-                        var company_index = name_to_index[company_name];
-                        var investor_index = name_to_index[investor_name];
-                        links.push({
-                            source: company_index,
-                            target: investor_index,
-                        });
-                    }
-                    if (i >= num_nodes) {
-                        console.log(links);
-                        runSimulation();
-                        break;
-                    }
-                }
-            });
-
-            function runSimulation() {
-                var simulation = d3
-                    .forceSimulation(nodes)
-                    .force("charge", d3.forceManyBody().strength(-140))
-                    .force("center", d3.forceCenter(width / 2, height / 2))
-                    .force("link", d3.forceLink().links(links).strength(0.09))
-                    .on("tick", ticked);
-
-                function updateLinks() {
-                    var u = d3
-                        .select(".links")
-                        .selectAll("line")
-                        .data(links)
-                        .join("line")
-                        .attr("x1", function (d) {
-                            return d.source.x;
-                        })
-                        .attr("y1", function (d) {
-                            return d.source.y;
-                        })
-                        .attr("x2", function (d) {
-                            return d.target.x;
-                        })
-                        .attr("y2", function (d) {
-                            return d.target.y;
-                        })
-                }
-
-                function updateNodes() {
-                    var u = d3
-                        .select(".nodes")
-                        .selectAll("text")
-                        .data(nodes)
-                        .join("text")
-                        .text(function (d) {
-                            return d.name;
-                        })
-                        .attr("x", function (d) {
-                            return d.x;
-                        })
-                        .attr("y", function (d) {
-                            return d.y;
-                        })
-                        .attr("dy", function (d) {
-                            return 5;
-                        })
-                }
-
-                function ticked() {
-                    updateLinks();
-                    updateNodes();
-                }
-            }
-        </script>
+        <script type="module" src="graph_viz.js"></script>
+        <script type="module" src="generate_investment_graph.js"></script>
     </body>
 </html>
