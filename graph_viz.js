@@ -85,7 +85,7 @@ d3.csv("/data/investments.csv").then(function (data) {
 function runSimulation() {
     var simulation = d3
         .forceSimulation(nodes)
-        .force("charge", d3.forceManyBody().strength(-1100))
+        .force("charge", d3.forceManyBody().strength(-1000))
         .force("center", d3.forceCenter(width / 2, height / 2))
         .force("link", d3.forceLink().links(links).strength(0.1))
         .force("collision", d3.forceCollide().radius(80))
@@ -102,7 +102,7 @@ function runSimulation() {
         .attr("cy", function (d) {
             return d.y;
         })
-        .attr("rx", 80)
+        .attr("rx", 100)
         .attr("ry", 80);
 
     // Drag / Zoom handler
@@ -111,6 +111,14 @@ function runSimulation() {
         d3.selectAll("svg g").attr("transform", e.transform);
     }
     d3.select("svg").call(zoom);
+
+    // Slider handler
+    var node_slider = document.getElementById("node_strength");
+    node_slider.oninput = function () {
+        var node_strength = -10 * this.value;
+        simulation.force("charge", d3.forceManyBody().strength(node_strength));
+        simulation.alpha(1).restart();
+    };
 
     function updateLinks() {
         d3.select(".links")

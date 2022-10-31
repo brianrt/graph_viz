@@ -96,7 +96,7 @@ export function generate_local_graphs() {
                 portfolio_cousins_investors
             };
         }
-        if (i == 1000 )
+        if (i == 10000 )
             break;
         i+=1;
     }
