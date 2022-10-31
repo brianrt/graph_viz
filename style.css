@@ -1,12 +1,14 @@
-circle {
-    fill: cadetblue;
+ellipse {
+    fill: white;
+    stroke-width: 2;
+    stroke: black;
 }
 line {
-    stroke: #ccc;
+    stroke: black;
 }
 text {
     text-anchor: middle;
     font-family: "Helvetica Neue", Helvetica, sans-serif;
     fill: #666;
-    font-size: 16px;
+    font-size: 12px;
 }
