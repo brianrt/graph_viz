@@ -88,10 +88,7 @@ function runSimulation() {
         .force("charge", d3.forceManyBody().strength(-1100))
         .force("center", d3.forceCenter(width / 2, height / 2))
         .force("link", d3.forceLink().links(links).strength(0.1))
-        .force(
-            "collision",
-            d3.forceCollide().radius(80)
-        )
+        .force("collision", d3.forceCollide().radius(80))
         .on("tick", ticked);
 
     // Initialize nodes
@@ -107,6 +104,13 @@ function runSimulation() {
         })
         .attr("rx", 80)
         .attr("ry", 80);
+
+    // Drag / Zoom handler
+    let zoom = d3.zoom().on("zoom", handleZoom);
+    function handleZoom(e) {
+        d3.selectAll("svg g").attr("transform", e.transform);
+    }
+    d3.select("svg").call(zoom);
 
     function updateLinks() {
         d3.select(".links")
@@ -138,8 +142,10 @@ function runSimulation() {
             .attr("cy", function (d) {
                 return d.y;
             });
+    }
 
-        d3.select(".nodes")
+    function updateText() {
+        d3.select(".texts")
             .selectAll("text")
             .data(nodes)
             .join("text")
@@ -157,5 +163,6 @@ function runSimulation() {
     function ticked() {
         updateLinks();
         updateNodes();
+        updateText();
     }
 }
