@@ -3,8 +3,24 @@
     <body>
         <div id="content">
             <div id="control">
-                <p class="label">Node strength</p>
+                <p class="label">Network separation</p>
                 <input type="range" min="0" max="250" value="125" class="slider" id="node_strength">
+                <div class="legend_row">
+                    <p class="legend_text">Input Startup: </p>
+                    <div class="legend_box" id="box_startup"></div>
+                </div>
+                <div class="legend_row">
+                    <p class="legend_text">Lead Investor: </p>
+                    <div class="legend_box" id="box_lead"></div>
+                </div>
+                <div class="legend_row">
+                    <p class="legend_text">Portfolio Cousin: </p>
+                    <div class="legend_box" id="box_cousin"></div>
+                </div>
+                <div class="legend_row">
+                    <p class="legend_text">Investor Rec: </p>
+                    <div class="legend_box" id="box_rec"></div>
+                </div>
             </div>
             <svg width="2000" height="2000">
                 <g class="links"></g>

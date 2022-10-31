@@ -102,8 +102,20 @@ function runSimulation() {
         .attr("cy", function (d) {
             return d.y;
         })
-        .attr("rx", 100)
-        .attr("ry", 80);
+        .attr("rx", 80)
+        .attr("ry", 50)
+        .attr("fill", function (d) {
+            const first_letter = d.name.substring(0, 1);
+            console.log(first_letter);
+            if (first_letter == "S")
+                return "#F1948A"
+            else if (first_letter == "L")
+                return "#C39BD3"
+            else if (first_letter == "C")
+                return "#82E0AA"
+            else
+                return "#85C1E9"
+        });
 
     // Drag / Zoom handler
     let zoom = d3.zoom().on("zoom", handleZoom);
@@ -149,7 +161,7 @@ function runSimulation() {
             })
             .attr("cy", function (d) {
                 return d.y;
-            });
+            })
     }
 
     function updateText() {
@@ -164,7 +176,7 @@ function runSimulation() {
                 return d.y;
             })
             .text(function (d) {
-                return d.name;
+                return d.name.substring(3);
             });
     }
 

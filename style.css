@@ -1,6 +1,5 @@
 ellipse {
-    fill: white;
-    stroke-width: 2;
+    stroke-width: 1;
     stroke: black;
     cursor: pointer;
 }
@@ -16,9 +15,9 @@ text {
 #control {
     position: fixed;
     width: 200px;
-    height: 100px;
-    top: 0px;
-    right: 0px;
+    height: 250px;
+    top: 10px;
+    left: 10px;
     background-color: white;
     border: 1px solid;
     padding: 10px;
@@ -27,6 +26,37 @@ text {
     font-family: "Helvetica Neue";
     font-weight: light;
 }
+
+/* Legend */
+.legend_row {
+    text-align: left;
+    display: flex;
+    height: 20px;
+    margin-top: 20px;
+}
+.legend_text {
+    margin: 0px;
+}
+.legend_box {
+    width: 25px;
+    height: 25px;
+    vertical-align: bottom;
+    position: absolute;
+    right: 40px;
+    border: 1px solid;
+}
 .label {
     font-size: 20px;
+}
+#box_startup {
+    background-color: #F1948A;
+}
+#box_lead {
+    background-color: #C39BD3;
+}
+#box_cousin {
+    background-color: #82E0AA;
+}
+#box_rec {
+    background-color: #85C1E9;
 }
