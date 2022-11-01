@@ -2,7 +2,7 @@
 <html>
     <body>
         <div id="content">
-            <div id="control">
+            <div class="control-container" id="control">
                 <p class="label">Network separation</p>
                 <input type="range" min="0" max="250" value="125" class="slider" id="node_strength">
                 <div class="legend_row">
@@ -20,6 +20,19 @@
                 <div class="legend_row">
                     <p class="legend_text">Investor Rec: </p>
                     <div class="legend_box" id="box_rec"></div>
+                </div>
+            </div>
+            <div class="control-container" id="company-container">
+                <p id="loading">Loading...</p>
+                Select a company
+                <div class="table-container" id="company-table-container">
+                    <table id="company-selector"></table>
+                </div>
+            </div>
+            <div class="control-container" id="round-container">
+                Select a round
+                <div class="table-container" id="round-table-container">
+                    <table id="round-selector"></table>
                 </div>
             </div>
             <svg width="2000" height="2000">

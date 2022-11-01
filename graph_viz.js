@@ -4,9 +4,8 @@ var width = 2000,
 var name_to_index = {};
 var nodes = [];
 var links = [];
-
-var test_startup = "0-6.com"; //try: 0-6.com, 2008-03-19 | cloud.IQ, 2012-02-01 | Brick2Click, 2011-05-30
-var test_round = "2008-03-19";
+var local_graphs;
+var simulation;
 
 import { initialize_investments, generate_local_graphs } from "./generate_investment_graph.js";
 
@@ -26,18 +25,82 @@ import { initialize_investments, generate_local_graphs } from "./generate_invest
         company_b: {...}
     }
 */
-// Generate local graph for test startup and round
+// Generate local graph for test startup and round from investments.csv
 d3.csv("/data/investments.csv").then(function (data) {
     initialize_investments(data);
-    const local_graphs = generate_local_graphs();
-    const local_graph = local_graphs[test_startup][test_round];
-    console.log(local_graph);
-    nodes.push({ name: "S: " + test_startup });
-    nodes.push({ name: "L: " + local_graph.lead_investor });
-    name_to_index[test_startup] = 0;
-    name_to_index[local_graph.lead_investor] = 1;
+    local_graphs = generate_local_graphs();
+    // Generate company selector table
+    intialize();
+});
+
+function intialize() {
+    // Remove loading
+    d3.select("#loading").remove();
+
+    // Generate company selector table
+    const companies = Object.keys(local_graphs);
+    d3.select("#company-selector")
+        .selectAll("tr")
+        .data(companies)
+        .join("tr")
+        .append("td")
+        .text(function (d) {
+            return d;
+        })
+        .on("click", function (e, company) {
+            loadFundingRounds(company);
+        });
+
+    // Drag / Zoom handler
+    let zoom = d3.zoom().on("zoom", handleZoom);
+    function handleZoom(e) {
+        d3.selectAll("svg g").attr("transform", e.transform);
+    }
+    d3.select("svg").call(zoom);
+
+    // Slider handler
+    var node_slider = document.getElementById("node_strength");
+    node_slider.oninput = function () {
+        var node_strength = -10 * this.value;
+        simulation.force("charge", d3.forceManyBody().strength(node_strength));
+        simulation.alpha(1).restart();
+    };
+}
+
+function loadFundingRounds(company) {
+    const round_dates = Object.keys(local_graphs[company]).sort();
+    const round_sizes = round_dates.map((round_date) => {
+        return Object.keys(local_graphs[company][round_date].portfolio_cousins_investors).length;
+    });
+    // Clear out existing rounds
+    d3.select("#round-selector").selectAll("tr").remove();
+    // Populate new rounds
+    d3.select("#round-selector")
+        .selectAll("tr")
+        .data(round_dates)
+        .join("tr")
+        .append("td")
+        .text(function (d, i) {
+            return d + " (" + round_sizes[i] + ")";
+        })
+        .on("click", function (e, round_date) {
+            generateGraph(company, round_date);
+        });
+}
+
+function generateGraph(company, round_date) {
+    const local_graph = local_graphs[company][round_date];
+    // Empty
+    name_to_index = {};
+    nodes = [];
+    links = [];
 
     // Generate nodes and name_to_index mappings
+    nodes.push({ name: "S: " + company });
+    nodes.push({ name: "L: " + local_graph.lead_investor });
+    name_to_index[company] = 0;
+    name_to_index[local_graph.lead_investor] = 1;
+
     var i = 2;
     for (const portfolio_cousin in local_graph.portfolio_cousins_investors) {
         if (!(portfolio_cousin in name_to_index)) {
@@ -77,13 +140,11 @@ d3.csv("/data/investments.csv").then(function (data) {
             });
         }
     }
-
-    // Run simulation
     runSimulation();
-});
+}
 
 function runSimulation() {
-    var simulation = d3
+    simulation = d3
         .forceSimulation(nodes)
         .force("charge", d3.forceManyBody().strength(-1000))
         .force("center", d3.forceCenter(width / 2, height / 2))
@@ -106,31 +167,11 @@ function runSimulation() {
         .attr("ry", 50)
         .attr("fill", function (d) {
             const first_letter = d.name.substring(0, 1);
-            console.log(first_letter);
-            if (first_letter == "S")
-                return "#F1948A"
-            else if (first_letter == "L")
-                return "#C39BD3"
-            else if (first_letter == "C")
-                return "#82E0AA"
-            else
-                return "#85C1E9"
+            if (first_letter == "S") return "#F1948A";
+            else if (first_letter == "L") return "#C39BD3";
+            else if (first_letter == "C") return "#82E0AA";
+            else return "#85C1E9";
         });
-
-    // Drag / Zoom handler
-    let zoom = d3.zoom().on("zoom", handleZoom);
-    function handleZoom(e) {
-        d3.selectAll("svg g").attr("transform", e.transform);
-    }
-    d3.select("svg").call(zoom);
-
-    // Slider handler
-    var node_slider = document.getElementById("node_strength");
-    node_slider.oninput = function () {
-        var node_strength = -10 * this.value;
-        simulation.force("charge", d3.forceManyBody().strength(node_strength));
-        simulation.alpha(1).restart();
-    };
 
     function updateLinks() {
         d3.select(".links")
@@ -161,7 +202,7 @@ function runSimulation() {
             })
             .attr("cy", function (d) {
                 return d.y;
-            })
+            });
     }
 
     function updateText() {

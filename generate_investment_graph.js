@@ -77,16 +77,22 @@ export function generate_local_graphs() {
 
             // Grab first 10 investors for each portfolio cousin, remove lead investor if necessary
             let portfolio_cousins_investors = {};
-            const num_investors = 10;
+            const max_investors = 10;
+            var num_investors = 0;
             portfolio_cousins.forEach(function (portfolio_cousin) {
                 let investors_sample = Array.from(company_to_investors[portfolio_cousin])
-                    .slice(0, num_investors)
+                    .slice(0, max_investors)
                     .filter(function (investor) {
                         return investor != lead_investor;
                     });
                 if (investors_sample.length > 0)
                     portfolio_cousins_investors[portfolio_cousin] = investors_sample;
+                    num_investors += investors_sample.length
             });
+
+            if (num_investors == 0) {
+                continue;
+            }
 
             if (!(company in local_graphs)) {
                 local_graphs[company] = {};
@@ -96,7 +102,7 @@ export function generate_local_graphs() {
                 portfolio_cousins_investors
             };
         }
-        if (i == 10000 )
+        if (i == 1000 )
             break;
         i+=1;
     }

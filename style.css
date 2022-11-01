@@ -12,12 +12,9 @@ text {
     fill: black;
     font-size: 16px;
 }
-#control {
+.control-container {
     position: fixed;
     width: 200px;
-    height: 250px;
-    top: 10px;
-    left: 10px;
     background-color: white;
     border: 1px solid;
     padding: 10px;
@@ -25,6 +22,16 @@ text {
     text-align: center;
     font-family: "Helvetica Neue";
     font-weight: light;
+}
+#control {
+    position: fixed;
+    width: 200px;
+    height: 250px;
+    top: 10px;
+    left: 10px;
+}
+#node_strength {
+    width: 90%;
 }
 
 /* Legend */
@@ -59,4 +66,51 @@ text {
 }
 #box_rec {
     background-color: #85C1E9;
+}
+
+/* Company and round tables */
+#company-container {
+    height: 525px;
+    top: 300px;
+    padding-top: 5px;
+}
+#company-table-container {
+    height: 500px;
+    top: 320px;
+}
+#round-container {
+    height: 200px;
+    top: 860px;
+    padding-top: 5px;
+}
+#round-table-container {
+    height: 175px;
+    top: 880px;
+}
+.table-container {
+    position: fixed;
+    width: 218px;
+    left: 11px;
+    border-top: 1px solid;
+    overflow-y: scroll;
+    overflow-x: hidden;
+    margin-top: 10px;
+}
+td {
+    height: 35px;
+    text-align: left;
+    padding-left: 10px;
+    cursor: pointer;
+    border-bottom: 1px solid;
+    border-color: lightgray;
+    width: 218px;
+}
+#loading {
+    position: absolute;
+    top: 45%;
+    text-align: center;
+    font-family: "Helvetica Neue";
+    font-weight: light;
+    font-size: 20px;
+    width: 200px;
 }
