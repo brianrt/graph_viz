@@ -7,7 +7,7 @@ var links = [];
 var local_graphs;
 var simulation;
 
-import { initialize_investments, generate_local_graphs } from "./generate_investment_graph.js";
+import { initialize_investments, generate_local_graphs } from "../generate_investment_graph.js";
 
 /*  
     local_graphs = {

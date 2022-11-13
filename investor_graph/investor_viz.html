@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <div id="content">
+            <div class="control-container" id="control">
+                <p class="label">Network separation</p>
+                <input type="range" min="0" max="300" value="150" class="slider" id="link_distance">
+                <div class="legend_row">
+                    <p class="legend_text">Input Investor: </p>
+                    <div class="legend_box" id="box_startup"></div>
+                </div>
+                <div class="legend_row">
+                    <p class="legend_text">Related Investors: </p>
+                    <div class="legend_box" id="box_lead"></div>
+                </div>
+            </div>
+            <div class="control-container" id="investor-container">
+                <p id="loading">Loading...</p>
+                Select an investor
+                <div class="table-container" id="investor-table-container">
+                    <table id="investor-selector"></table>
+                </div>
+            </div>
+            <svg width="2000" height="2000">
+                <g class="links"></g>
+                <g class="nodes"></g>
+                <g class="texts"></g>
+            </svg>
+        </div>
+        <script src="https://d3js.org/d3.v7.min.js"></script>
+        <link rel="stylesheet" href="style.css" />
+        <script type="module" src="investor_viz.js"></script>
+    </body>
+</html>
