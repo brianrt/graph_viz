@@ -111,14 +111,18 @@ export function generate_local_graphs() {
 
 /*
     Generate entire investor graph
-    investors sorted by most to least co-investments
+    investors sorted by most to least num_co_investment_rounds
     investor_graph: {
-        investor_a: { investor_b: <# of rounds a and b have co-invested in the same company, investor_c: count_2, ...}
+        {
+            investor: investor_a,
+            num_co_investment_rounds: n,
+            portfolio_cousins: Set([portfolio_cousin_1, portfolio_cousin_2, ...])
+        },
+        {...}
     }
 */
 export function generate_investor_graph() {
     let investor_graph_temp = {};
-    var i = 0;
     for (const company in company_to_round_investors) {
         for (const round_date in company_to_round_investors[company]) {
             const round_investors = company_to_round_investors[company][round_date];
@@ -132,31 +136,33 @@ export function generate_investor_graph() {
                 round_investors.forEach(function (round_investor_dest) {
                     if (round_investor_source != round_investor_dest) {
                         if (!(round_investor_dest in investor_graph_temp[round_investor_source])) {
-                            investor_graph_temp[round_investor_source][round_investor_dest] = 0;
+                            investor_graph_temp[round_investor_source][round_investor_dest] = {
+                                num_co_investment_rounds: 0,
+                                portfolio_cousins: new Set()
+                            };
                         }
-                        investor_graph_temp[round_investor_source][round_investor_dest] += 1;
+                        investor_graph_temp[round_investor_source][round_investor_dest].num_co_investment_rounds += 1;
+                        investor_graph_temp[round_investor_source][round_investor_dest].portfolio_cousins.add(company);
                     }
                 });
             });
         }
-        // if (i == 10000)
-        //     break;
-        i+=1;
     }
 
     let investor_graph = {}
     // Sort by # co-invested rounds
-    let max = 0;
-    for (const investor in investor_graph_temp) {
-        const related_investors_dict = investor_graph_temp[investor];
-        const related_investors = Object.keys(related_investors_dict).map(function(key) {
-            return [key, related_investors_dict[key]];
+    for (const investor_source in investor_graph_temp) {
+        const related_investors_dict = investor_graph_temp[investor_source];
+        const related_investors = Object.keys(related_investors_dict).map(function(investor_dest) {
+            return {
+                investor: investor_dest,
+                ...related_investors_dict[investor_dest]
+            };
         });
         related_investors.sort(function(first, second) {
-            return second[1] - first[1];
+            return second.num_co_investment_rounds - first.num_co_investment_rounds;
         });
-        // Limit to top 20
-        investor_graph[investor] = related_investors;//.slice(0, 20);
+        investor_graph[investor_source] = related_investors;
     }
 
     return investor_graph;
