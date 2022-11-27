@@ -2,12 +2,21 @@ var width = 2000,
     height = 1300;
 
 var investor_graph;
-const radius_x = 60;
-const radius_y = 30;
-const min_radius = 20;
+const radius_x = 50;
+const radius_y = 50;
+const min_radius = 30;
 const max_radius = 100;
 const min_distance = 200;
 const step_size = 150;
+
+// Colors
+const lead_main = "#B4C6E4";
+const lead_outline = "#87A3D4";
+const investor_main = "#02CAA2";
+const investor_outline = "#02A282";
+const cousin_main = "#F17EA4";
+const cousin_outline = "#CA1652";
+
 
 var nodes = [];
 var links = [];
@@ -92,15 +101,20 @@ function generateLeadGraph(lead, investor_recs) {
     }
     links = [];
 
-    // Compute max number of co-investments
-    var max_count = 1;
+    // Gather all values of num_co_investments
+    var counts = new Set();
     for (var i = 0; i < investor_recs.length; i++) {
         const investor_obj = investor_recs[i];
-        if (investor_obj.num_co_investments > max_count) {
-            max_count = investor_obj.num_co_investments;
-        }
+        counts.add(investor_obj.num_co_investments);
     }
 
+    // Map counts to help with normalizing length of edges
+    const sortedCounts = Array.from(counts).sort((a, b) => a - b);
+    const countMap = {}
+    for (var i = 0; i < sortedCounts.length; i++) {
+        countMap[sortedCounts[i]] = i + 1;
+    }
+    const max_count = sortedCounts.length;
 
     for (var i = 0; i < investor_recs.length; i++) {
         const investor_obj = investor_recs[i];
@@ -110,7 +124,7 @@ function generateLeadGraph(lead, investor_recs) {
         links.push({
             source: i+1,
             target: 0,
-            distance: max_count - count
+            distance: max_count - countMap[count]
         });
     }
     runSimulation(true);
@@ -176,7 +190,9 @@ function runSimulation(isLeadGraph) {
             .force("link", d3.forceLink().links(links).distance(function(link) {
                 return Math.max((link.distance * step_size) + step_size, min_distance);
             }))
-            .force("collision", d3.forceCollide().radius(Math.max(radius_x, radius_y)))
+            .force("collision", d3.forceCollide().radius(function(node) {
+                return Math.min(min_radius * node.count, max_radius);
+            }))
             .on("tick", ticked);
     } else {
         simulation = d3
@@ -226,12 +242,17 @@ function runSimulation(isLeadGraph) {
             if (node.type == "lead" || node.type == "investor") {
                 return Math.min(min_radius * node.count, max_radius);
             }
-            return 0;
+            return radius_y;
         })
         .attr("fill", function (node) {
-            if (node.type == "lead") return "#F1948A";
-            else if (node.type == "investor") return "#C39BD3";
-            else return "#85C1E9";
+            if (node.type == "lead") return lead_main;
+            else if (node.type == "investor") return investor_main;
+            else return cousin_main;
+        })
+        .attr("stroke", function (node) {
+            if (node.type == "lead") return lead_outline;
+            else if (node.type == "investor") return investor_outline;
+            else return cousin_outline;
         }).on("click", function (e, node) {
             const lead = nodes[0].name;
             console.log(lead);

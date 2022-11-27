@@ -1,16 +1,15 @@
 ellipse {
-    stroke-width: 1;
-    stroke: black;
+    stroke-width: 5;
     cursor: pointer;
 }
 line {
-    stroke: gray;
+    stroke: lightgray;
 }
 text {
     text-anchor: middle;
-    font-family: "Helvetica Neue", Helvetica, sans-serif;
+    font-family: "Helvetica Neue";
     fill: black;
-    font-size: 16px;
+    font-size: 13px;
 }
 .control-container {
     position: fixed;
