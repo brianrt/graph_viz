@@ -113,12 +113,15 @@ export function generate_local_graphs() {
     Generate entire investor graph
     investors sorted by most to least num_co_investment_rounds
     investor_graph: {
-        {
-            investor: investor_a,
-            num_co_investment_rounds: n,
-            portfolio_cousins: Set([portfolio_cousin_1, portfolio_cousin_2, ...])
-        },
-        {...}
+        investor_a: [
+            0: {
+                investor: investor_dest,
+                num_co_investment_rounds: n,
+                portfolio_cousins: Set([portfolio_cousin_1, portfolio_cousin_2, ...])
+            },
+            1: {...}
+        ],
+        investor_b: {...}
     }
 */
 export function generate_investor_graph() {
