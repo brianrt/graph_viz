@@ -4,8 +4,8 @@ var width = 2000,
 var investor_graph;
 const radius_x = 50;
 const radius_y = 50;
-const min_radius = 30;
-const max_radius = 100;
+const min_radius = 25;
+const max_radius = 130;
 const min_distance = 200;
 const step_size = 150;
 
