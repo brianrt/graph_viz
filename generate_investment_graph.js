@@ -111,12 +111,12 @@ export function generate_local_graphs() {
 
 /*
     Generate entire investor graph
-    investors sorted by most to least num_co_investment_rounds
+    investors sorted by most to least num_co_investments
     investor_graph: {
         investor_a: [
             0: {
                 investor: investor_dest,
-                num_co_investment_rounds: n,
+                num_co_investments: n,
                 portfolio_cousins: Set([portfolio_cousin_1, portfolio_cousin_2, ...])
             },
             1: {...}
@@ -140,12 +140,13 @@ export function generate_investor_graph() {
                     if (round_investor_source != round_investor_dest) {
                         if (!(round_investor_dest in investor_graph_temp[round_investor_source])) {
                             investor_graph_temp[round_investor_source][round_investor_dest] = {
-                                num_co_investment_rounds: 0,
+                                num_co_investments: 0,
                                 portfolio_cousins: new Set()
                             };
                         }
-                        investor_graph_temp[round_investor_source][round_investor_dest].num_co_investment_rounds += 1;
                         investor_graph_temp[round_investor_source][round_investor_dest].portfolio_cousins.add(company);
+                        investor_graph_temp[round_investor_source][round_investor_dest].num_co_investments =
+                            investor_graph_temp[round_investor_source][round_investor_dest].portfolio_cousins.size;
                     }
                 });
             });
@@ -163,7 +164,7 @@ export function generate_investor_graph() {
             };
         });
         related_investors.sort(function(first, second) {
-            return second.num_co_investment_rounds - first.num_co_investment_rounds;
+            return second.num_co_investments - first.num_co_investments;
         });
         investor_graph[investor_source] = related_investors;
     }
