@@ -10,15 +10,21 @@ let company_to_investors = {};
 // investor_a: [company_a, company_b]
 let investor_to_companies = {};
 
+// company -> company categories
+// company_a: [category_a, category_b]
+let company_to_categories = {};
+
 export function initialize_investments(data) {
     for (var i = 0; i < data.length; i++) {
         const company = data[i].company_name;
         const investor = data[i].investor_name;
         const round_date = data[i].funded_at;
+        const categories = data[i].company_category_list.split('|');
 
         if (!(company in company_to_round_investors)) {
             company_to_round_investors[company] = {};
             company_to_investors[company] = new Set();
+            company_to_categories[company] = new Set();
         }
         if (!(round_date in company_to_round_investors[company])) {
             company_to_round_investors[company][round_date] = new Set();
@@ -30,6 +36,7 @@ export function initialize_investments(data) {
         company_to_round_investors[company][round_date].add(investor);
         company_to_investors[company].add(investor);
         investor_to_companies[investor].add(company);
+        categories.forEach((category) => company_to_categories[company].add(category));
     }
 }
 
@@ -170,4 +177,8 @@ export function generate_investor_graph() {
     }
 
     return investor_graph;
+}
+
+export function generate_company_categories() {
+    return company_to_categories;
 }
