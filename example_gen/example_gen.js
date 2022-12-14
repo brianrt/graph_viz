@@ -55,10 +55,14 @@ function intialize() {
         var search_results = [];
         if (company_prefix.length > 0) {
             var found = false;
+            const MAX_SEARCH_RESULTS = 15;
             for (var i = 0; i < companies.length; i++) {
                 const curr_company = companies[i];
                 if (curr_company.toLowerCase().startsWith(company_prefix.toLowerCase())) {
                     search_results.push(curr_company);
+                    if (search_results.length > MAX_SEARCH_RESULTS) {
+                        break;
+                    }
                     found = true;
                 } else if (found) {
                     break;
