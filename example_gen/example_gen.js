@@ -1,7 +1,6 @@
 var width = 2000,
     height = 1300;
 
-var company_categories;
 var investor_graph;
 const radius_x = 50;
 const radius_y = 50;
@@ -23,7 +22,7 @@ var nodes = [];
 var links = [];
 var simulation;
 
-import { initialize_investments, generate_investor_graph, generate_company_categories } from "../generate_investment_graph.js";
+import { initialize_investments, company_to_round_investors, find_co_investors_before_date, generate_round_leads } from "../generate_investment_graph.js";
 
 /*  
     investor_graph: {
@@ -41,7 +40,10 @@ import { initialize_investments, generate_investor_graph, generate_company_categ
 // Generate local graph for test startup and round from investments.csv
 d3.csv("/data/investments.csv").then(function (data) {
     initialize_investments(data);
-    company_categories = generate_company_categories();
+    let company_to_leads = generate_round_leads();
+    console.log(company_to_leads['Open Services']);
+    let investors = find_co_investors_before_date("1to1 Venture Partners", "Open Services", "2003-01-10", false, true);
+    console.log(investors);
     // console.log(company_categories);
     // investor_graph = generate_investor_graph();
     // // Generate investor selector table
@@ -49,13 +51,12 @@ d3.csv("/data/investments.csv").then(function (data) {
 });
 
 function intialize() {
-    const companies = Object.keys(company_categories).sort();
+    const companies = Object.keys(company_to_round_investors).sort();
     d3.select("#company_search").on('input', function () {
         const company_prefix = this.value;
         var search_results = [];
         if (company_prefix.length > 0) {
-            var found = false;
-            const MAX_SEARCH_RESULTS = 15;
+            const MAX_SEARCH_RESULTS = 100;
             for (var i = 0; i < companies.length; i++) {
                 const curr_company = companies[i];
                 if (curr_company.toLowerCase().startsWith(company_prefix.toLowerCase())) {
@@ -63,9 +64,6 @@ function intialize() {
                     if (search_results.length > MAX_SEARCH_RESULTS) {
                         break;
                     }
-                    found = true;
-                } else if (found) {
-                    break;
                 }
             }
         }

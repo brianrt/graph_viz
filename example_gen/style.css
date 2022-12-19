@@ -20,6 +20,10 @@ table {
     border-radius: 5px;
     border-color: gray;
     width: 516px;
+    max-height: 500px;
+    display: block;
+    overflow-y: scroll;
+    overflow-x: hidden;
 }
 
 tr {
@@ -27,8 +31,11 @@ tr {
     height: 35px;
     line-height: 35px;
     border-bottom: 1px solid;
-    border-color: black;
+    border-color: lightgray;
     cursor: pointer;
+    width: 100%;
+    display: block;
+    padding-left: 10px;
 }
 
 tr:hover {
