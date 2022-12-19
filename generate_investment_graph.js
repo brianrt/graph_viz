@@ -275,7 +275,7 @@ export function find_co_investors_before_date(lead, company, company_round_date,
     const round_dates = Object.keys(lead_rounds).filter((round) => round < company_round_date);
 
     // Gather investors
-    var investors = new Set();
+    var co_investors_temp = {};
     for (var i = 0; i < round_dates.length; i++) {
         const round_date = round_dates[i];
         const cousins = lead_rounds[round_date];
@@ -288,11 +288,29 @@ export function find_co_investors_before_date(lead, company, company_round_date,
 
                 cousin_investors.forEach(cousin_investor => {
                     if (!filter_investors || (filter_investors && has_overlapping_categories(company_to_categories[company], investor_to_categories[cousin_investor]))) {
-                        investors.add(cousin_investor);
+                        if (!(cousin_investor in co_investors_temp)) {
+                            co_investors_temp[cousin_investor] = {
+                                num_co_investments: 0,
+                                portfolio_cousins: new Set()
+                            };
+                        }
+                        co_investors_temp[cousin_investor].portfolio_cousins.add(cousin);
+                        co_investors_temp[cousin_investor].num_co_investments = co_investors_temp[cousin_investor].portfolio_cousins.size;
                     }
                 });
             }
         });
     }
-    return investors;
+
+    // Sort by num_co_investments
+    const co_investors = Object.keys(co_investors_temp).map(function(co_investor) {
+        return {
+            investor: co_investor,
+            ...co_investors_temp[co_investor]
+        };
+    });
+    co_investors.sort(function(first, second) {
+        return second.num_co_investments - first.num_co_investments;
+    });
+    return co_investors;
 }

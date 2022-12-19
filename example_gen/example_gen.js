@@ -41,8 +41,8 @@ import { initialize_investments, company_to_round_investors, find_co_investors_b
 d3.csv("/data/investments.csv").then(function (data) {
     initialize_investments(data);
     let company_to_leads = generate_round_leads();
-    console.log(company_to_leads['Open Services']);
-    let investors = find_co_investors_before_date("1to1 Venture Partners", "Open Services", "2003-01-10", false, true);
+    console.log(company_to_leads["H2O.ai"]);
+    let investors = find_co_investors_before_date("Nexus Venture Partners", "H2O.ai", "2016-01-04", false, false);
     console.log(investors);
     // console.log(company_categories);
     // investor_graph = generate_investor_graph();
@@ -75,7 +75,7 @@ function intialize() {
                 return company;
             })
             // .on("click", function (e, lead) {
-            //     loadInvestorRecs(lead);
+            //     loadCompanyRounds(lead);
             // });
     })
 
