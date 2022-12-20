@@ -1,6 +1,6 @@
 // company -> 2d list of investors per round (key'd by date)
 // company_a: { 2008-03-19: [investor_a, investor_b], 2010-4-20: [investor_a, investor_c] }
-export let company_to_round_investors = {};
+let company_to_round_investors = {};
 
 // investor -> list of round_dates along with companies invested in at each of those dates (possibility of investing in two rounds on same day)
 // investor_a: { 2008-03-19: [company_a, company_b], 2010-4-20: [company_c] }
@@ -16,11 +16,11 @@ let investor_to_companies = {};
 
 // company -> company categories
 // company_a: [category_a, category_b]
-let company_to_categories = {};
+export let company_to_categories = {};
 
 // company -> company categories
 // company_a: [category_a, category_b]
-let investor_to_categories = {};
+export let investor_to_categories = {};
 
 export function initialize_investments(data) {
     for (var i = 0; i < data.length; i++) {
@@ -207,37 +207,31 @@ export function generate_investor_graph() {
         company_b: {...}
     }
 */
-export function generate_round_leads() {
-    // company -> dict of leads per round based on investor with most investments up to that point
-    // company_a: {2008-03-19: investor_a, 2010-4-20: investor_b}
+export function generate_round_leads(company) {
+    // company: {2008-03-19: investor_a, 2010-4-20: investor_b}
     let company_to_leads = {};
-    const companies = Object.keys(company_to_round_investors);
-    for (var i = 0; i < companies.length; i++) {
-        const company = companies[i];
-        company_to_leads[company] = {};
-        const rounds = Object.keys(company_to_round_investors[company]);
-        for (var j = 0; j < rounds.length; j++) {
-            const round_date = rounds[j];
-            const investors = company_to_round_investors[company][round_date];
-            var lead_investor;
-            var max_investments = 0;
-            investors.forEach(investor => {
-                // Compute num investments up until round_date
-                const investor_round_dates = Object.keys(investor_to_rounds[investor]);
-                var num_investments = 0;
-                for (var k = 0; k < investor_round_dates.length; k++) {
-                    const investor_round_date = investor_round_dates[k];
-                    if (investor_round_date < round_date) {
-                        num_investments += investor_to_rounds[investor][investor_round_date].size;
-                    }
+    const rounds = Object.keys(company_to_round_investors[company]);
+    for (var j = 0; j < rounds.length; j++) {
+        const round_date = rounds[j];
+        const investors = company_to_round_investors[company][round_date];
+        var lead_investor;
+        var max_investments = 0;
+        investors.forEach(investor => {
+            // Compute num investments up until round_date
+            const investor_round_dates = Object.keys(investor_to_rounds[investor]);
+            var num_investments = 0;
+            for (var k = 0; k < investor_round_dates.length; k++) {
+                const investor_round_date = investor_round_dates[k];
+                if (investor_round_date < round_date) {
+                    num_investments += investor_to_rounds[investor][investor_round_date].size;
                 }
-                if (num_investments > max_investments) {
-                    max_investments = num_investments;
-                    lead_investor = investor;
-                }
-            });
-            company_to_leads[company][round_date] = lead_investor;
-        }
+            }
+            if (num_investments > max_investments) {
+                max_investments = num_investments;
+                lead_investor = investor;
+            }
+        });
+        company_to_leads[round_date] = lead_investor;
     }
     return company_to_leads;
 }
