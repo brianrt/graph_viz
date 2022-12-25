@@ -1,7 +1,10 @@
 .container {
     position: absolute;
-    left: 5px;
-    width: 500px;
+    width: 400px;
+}
+.center {
+    left: 50%;
+    transform: translate(-50%);
 }
 
 .container p {
@@ -32,7 +35,7 @@ table {
     border-bottom: 1px solid;
     border-color: gray;
     max-height: 500px;
-    width: 516px;
+    width: 416px;
     display: block;
 }
 #company-selector {
@@ -54,7 +57,7 @@ tr {
     border-bottom: 1px solid;
     border-color: lightgray;
     cursor: pointer;
-    width: 504px;
+    width: 404px;
     display: block;
     padding-left: 10px;
     background-color: white;
@@ -70,6 +73,10 @@ tr:hover {
 }
 
 /* Graph Styling */
+svg {
+    position: absolute;
+    z-index: -1;
+}
 ellipse {
     stroke-width: 1;
     stroke: black;

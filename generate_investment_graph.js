@@ -277,7 +277,7 @@ export function find_co_investors_before_date(lead, company, company_round_date,
             // If filter_cousins, check cousin category before looking at investors
             if (!filter_cousins || (filter_cousins && has_overlapping_categories(company_to_categories[company], company_to_categories[cousin]))) {
                 // Get all investors who co-invested with lead in cousin, round_date round and remove lead
-                let cousin_investors = company_to_round_investors[cousin][round_date];
+                let cousin_investors = new Set(company_to_round_investors[cousin][round_date]);
                 cousin_investors.delete(lead);
 
                 cousin_investors.forEach(cousin_investor => {

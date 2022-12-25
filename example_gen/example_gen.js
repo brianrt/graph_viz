@@ -1,7 +1,3 @@
-var width = 2000,
-    height = 1300;
-
-var investor_graph;
 const radius_x = 50;
 const radius_y = 50;
 const min_radius = 25;
@@ -17,9 +13,11 @@ const investor_outline = "#02A282";
 const cousin_main = "#F17EA4";
 const cousin_outline = "#CA1652";
 
+var investor_graph;
 var nodes = [];
 var links = [];
-var simulation;
+var width;
+var height;
 
 import {
     initialize_investments,
@@ -44,12 +42,6 @@ import {
 // Generate local graph for test startup and round from investments.csv
 d3.csv("/data/investments.csv").then(function (data) {
     initialize_investments(data);
-    // console.log(company_to_leads["H2O.ai"]);
-    // let investors = find_co_investors_before_date("Nexus Venture Partners", "H2O.ai", "2016-01-04", false, false);
-    // console.log(investors);
-    // console.log(company_categories);
-    // investor_graph = generate_investor_graph();
-    // // Generate investor selector table
     intialize();
 });
 
@@ -89,20 +81,6 @@ function intialize() {
             });
     });
 
-    // // Generate lead selector table
-    // const leads = Object.keys(investor_graph);
-    // d3.select("#lead-selector")
-    //     .selectAll("tr")
-    //     .data(leads)
-    //     .join("tr")
-    //     .append("td")
-    //     .text(function (lead) {
-    //         return lead + " (" + investor_graph.length + ")";
-    //     })
-    //     .on("click", function (e, lead) {
-    //         loadInvestorRecs(lead);
-    //     });
-
     // Drag / Zoom handler
     let zoom = d3.zoom().on("zoom", handleZoom);
     function handleZoom(e) {
@@ -115,7 +93,6 @@ function loadFundingRounds(company) {
     console.log(company);
     const company_to_leads = generate_round_leads(company);
     const rounds = Object.keys(company_to_leads).sort();
-    console.log(company_to_leads);
     d3.select("#round-container").style("visibility", "visible");
     d3.select("#round-selector")
         .selectAll("tr")
@@ -141,23 +118,7 @@ function loadLeadSearch(round, suggested_lead, company) {
     if (suggested_lead) {
         search_results = [suggested_lead + " (Suggested Lead)"];
     }
-    d3.select("#lead-selector")
-        .selectAll("tr")
-        .data(search_results)
-        .join("tr")
-        .attr("id", "lead-tr")
-        .text(function (lead) {
-            return lead;
-        })
-        .on("click", function (e, lead) {
-            // Set clicked lead and clear results
-            d3.select("#lead-search").property("value", lead);
-            d3.select("#lead-selector")
-                .selectAll("tr")
-                .data([])
-                .join("tr");
-            loadInvestorRecs(round, suggested_lead, company);
-        });
+    populateLeadSelector(suggested_lead, search_results, round, company);
     const leads = Object.keys(investor_to_categories).sort();
     d3.select("#lead-search").on("input", function () {
         const lead_prefix = this.value;
@@ -177,49 +138,52 @@ function loadLeadSearch(round, suggested_lead, company) {
                 }
             }
         }
-        d3.select("#lead-selector")
-            .selectAll("tr")
-            .data(search_results)
-            .join("tr")
-            .attr("id", "lead-tr")
-            .text(function (lead) {
-                return lead;
-            })
-            .on("click", function (e, lead) {
-                // Set clicked lead and clear results
-                search_results = [];
-                d3.select("#lead-search").property("value", lead);
-                d3.select("#lead-selector")
-                    .selectAll("tr")
-                    .data(search_results)
-                    .join("tr");
-                if (lead.includes(suggested_lead)) {
-                    lead = suggested_lead;
-                }
-                loadInvestorRecs(round, lead, company)
-            });
+        populateLeadSelector(suggested_lead, search_results, round, company);
     });
+}
+
+function populateLeadSelector(suggested_lead, search_results, round, company) {
+    d3.select("#lead-selector")
+        .selectAll("tr")
+        .data(search_results)
+        .join("tr")
+        .attr("id", "lead-tr")
+        .text(function (lead) {
+            return lead;
+        })
+        .on("click", function (e, lead) {
+            // Set clicked lead and clear results
+            d3.select("#lead-search").property("value", lead);
+            d3.select("#lead-selector")
+                .selectAll("tr")
+                .data([])
+                .join("tr");
+            if (suggested_lead && lead.includes(" (Suggested Lead)")) {
+                lead = suggested_lead;
+            }
+            loadInvestorRecs(round, lead, company);
+        });
 }
 
 function loadInvestorRecs(round, lead, company) {
     // TODO: put last two booleans behind check boxes
     investor_graph  = find_co_investors_before_date(lead, company, round, true, true);
-
+    loadGraphStyling();
     generateLeadGraph(lead, investor_graph);
-    // // Clear out existing investor recs
-    // d3.select("#investor-selector").selectAll("tr").remove();
-    // // Populate new investor recs
-    // d3.select("#investor-selector")
-    //     .selectAll("tr")
-    //     .data(investor_graph)
-    //     .join("tr")
-    //     .append("td")
-    //     .text(function (investor_obj) {
-    //         return investor_obj.investor + " (" + investor_obj.num_co_investments + ")";
-    //     })
-    //     .on("click", function (e, i) {
-    //         generateCousinsGraph(lead, investor_obj);
-    //     });
+}
+
+function loadGraphStyling(){
+    // Move container to left
+    d3.selectAll(".center").classed("center", false);
+    // compute size and position of svg
+    const container_right = d3.select(".container").node().getBoundingClientRect().right;
+    width = window.innerWidth - container_right;
+    height = window.innerHeight;
+    d3.select("svg")
+        .attr("width", width - 30)
+        .attr("height", height - 30)
+        .style("left", container_right + 30 + "px")
+
 }
 
 function generateLeadGraph(lead, investor_graph) {
@@ -313,7 +277,7 @@ function generateCousinsGraph(lead, investor_obj) {
 
 function runSimulation(isLeadGraph) {
     if (isLeadGraph) {
-        simulation = d3
+        const simulation = d3
             .forceSimulation(nodes)
             .force("charge", d3.forceManyBody().strength(-1000))
             .force("center", d3.forceCenter(width / 2, height / 2))
@@ -334,7 +298,7 @@ function runSimulation(isLeadGraph) {
             )
             .on("tick", ticked);
     } else {
-        simulation = d3
+        const simulation = d3
             .forceSimulation(nodes)
             .force(
                 "x",
