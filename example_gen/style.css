@@ -78,8 +78,7 @@ svg {
     z-index: -1;
 }
 ellipse {
-    stroke-width: 1;
-    stroke: black;
+    stroke-width: 3;
     cursor: pointer;
 }
 line {
