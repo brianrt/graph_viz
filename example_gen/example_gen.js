@@ -96,6 +96,14 @@ function loadFundingRounds(company) {
     console.log(company);
     const company_to_leads = generate_round_leads(company);
     const rounds = Object.keys(company_to_leads).sort();
+    d3.select("#company-industry").text(company + " industries:");
+    d3.select("#industries")
+        .selectAll("li")
+        .data(Array.from(company_to_categories[company]))
+        .join("li")
+        .text(function (industry) {
+            return industry
+        });
     d3.select("#round-container").style("visibility", "visible");
     d3.select("#round-selector")
         .selectAll("tr")
@@ -182,7 +190,7 @@ function loadInvestorRecs(round, lead, company) {
         } else {
             filter_investors = checked;
         }
-        investor_graph  = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
+        investor_graph = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
         generateLeadGraph(lead, investor_graph);
     });
     investor_graph  = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);

@@ -31,6 +31,14 @@
     line-height: 25px;
     margin-top: 5px;
 }
+#company-industry {
+    margin-top: 15px;
+}
+#industries {
+    font: 15px Arial;
+    padding-left: 25px;
+    margin-top: 5px;
+}
 input {
     width: 20px;
     height: 20px;
