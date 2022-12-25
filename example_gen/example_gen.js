@@ -18,6 +18,8 @@ var nodes = [];
 var links = [];
 var width;
 var height;
+var filter_cousins = false;
+var filter_investors = false;
 
 import {
     initialize_investments,
@@ -50,6 +52,7 @@ function intialize() {
     d3.select("#company-search").on("input", function () {
         d3.select("#round-container").style("visibility", "hidden");
         d3.select("#lead-container").style("visibility", "hidden");
+        d3.select("#filter-container").style("visibility", "hidden");
         const company_prefix = this.value;
         var search_results = [];
         if (company_prefix.length > 0) {
@@ -114,6 +117,8 @@ function loadLeadSearch(round, suggested_lead, company) {
         .style("visibility", "visible")
         .style("top", bottom_round + 30 + "px");
     d3.select("#lead-search").property("value", "");
+    // Hide Checkbox
+    d3.select("#filter-container").style("visibility", "hidden");
     var search_results = [];
     if (suggested_lead) {
         search_results = [suggested_lead + " (Suggested Lead)"];
@@ -121,6 +126,8 @@ function loadLeadSearch(round, suggested_lead, company) {
     populateLeadSelector(suggested_lead, search_results, round, company);
     const leads = Object.keys(investor_to_categories).sort();
     d3.select("#lead-search").on("input", function () {
+        // Hide Checkbox
+        d3.select("#filter-container").style("visibility", "hidden");
         const lead_prefix = this.value;
         var search_results = [];
         if (suggested_lead) {
@@ -166,16 +173,32 @@ function populateLeadSelector(suggested_lead, search_results, round, company) {
 }
 
 function loadInvestorRecs(round, lead, company) {
-    // TODO: put last two booleans behind check boxes
-    investor_graph  = find_co_investors_before_date(lead, company, round, true, true);
-    loadGraphStyling();
+    // Update graph when category filter checkboxes modified
+    d3.selectAll(".filter_category").on("input", function () {
+        const type = this.value;
+        const checked = d3.select(this).property("checked");
+        if (type == "filter_cousins") {
+            filter_cousins = checked;
+        } else {
+            filter_investors = checked;
+        }
+        investor_graph  = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
+        generateLeadGraph(lead, investor_graph);
+    });
+    investor_graph  = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
+    arrangeLayout();
     generateLeadGraph(lead, investor_graph);
 }
 
-function loadGraphStyling(){
+function arrangeLayout(){
     // Move container to left
     d3.selectAll(".center").classed("center", false);
-    // compute size and position of svg
+    // Compute height for checkbox and unhide
+    const bottom_lead = d3.select("#lead-container").node().getBoundingClientRect().bottom;
+    d3.select("#filter-container")
+        .style("visibility", "visible")
+        .style("top", bottom_lead + 30 + "px");
+    // Compute size and position of svg
     const container_right = d3.select(".container").node().getBoundingClientRect().right;
     width = window.innerWidth - container_right;
     height = window.innerHeight;
@@ -385,7 +408,6 @@ function runSimulation(isLeadGraph) {
                         break;
                     }
                 }
-                console.log("couldn't find investor");
             }
         });
 
