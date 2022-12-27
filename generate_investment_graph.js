@@ -1,6 +1,6 @@
 // company -> 2d list of investors per round (key'd by date)
 // company_a: { 2008-03-19: [investor_a, investor_b], 2010-4-20: [investor_a, investor_c] }
-let company_to_round_investors = {};
+export let company_to_round_investors = {};
 
 // investor -> list of round_dates along with companies invested in at each of those dates (possibility of investing in two rounds on same day)
 // investor_a: { 2008-03-19: [company_a, company_b], 2010-4-20: [company_c] }

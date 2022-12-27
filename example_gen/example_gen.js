@@ -26,7 +26,8 @@ import {
     find_co_investors_before_date,
     generate_round_leads,
     company_to_categories,
-    investor_to_categories,
+    company_to_round_investors,
+    investor_to_categories
 } from "../generate_investment_graph.js";
 /*  
     investor_graph: {
@@ -53,6 +54,7 @@ function intialize() {
         d3.select("#round-container").style("visibility", "hidden");
         d3.select("#lead-container").style("visibility", "hidden");
         d3.select("#filter-container").style("visibility", "hidden");
+        d3.select("#actual-investors-container").style("visibility", "hidden");
         const company_prefix = this.value;
         var search_results = [];
         if (company_prefix.length > 0) {
@@ -95,7 +97,7 @@ function intialize() {
 function loadFundingRounds(company) {
     const company_to_leads = generate_round_leads(company);
     const rounds = Object.keys(company_to_leads).sort();
-    d3.select("#company-industry").text(company + " industries:");
+    d3.select("#company-industry").text(company + " Industries:");
     d3.select("#industries")
         .selectAll("li")
         .data(Array.from(company_to_categories[company]))
@@ -127,8 +129,9 @@ function loadLeadSearch(round, suggested_lead, company) {
         .style("visibility", "visible")
         .style("top", bottom_round + 30 + "px");
     d3.select("#lead-search").property("value", "");
-    // Hide Checkbox
+    // Hide everything below Leads
     d3.select("#filter-container").style("visibility", "hidden");
+    d3.select("#actual-investors-container").style("visibility", "hidden");
     var search_results = [];
     if (suggested_lead) {
         search_results = [suggested_lead + " (Suggested Lead)"];
@@ -136,8 +139,9 @@ function loadLeadSearch(round, suggested_lead, company) {
     populateLeadSelector(suggested_lead, search_results, round, company);
     const leads = Object.keys(investor_to_categories).sort();
     d3.select("#lead-search").on("input", function () {
-        // Hide Checkbox
+        // Hide everything below Leads
         d3.select("#filter-container").style("visibility", "hidden");
+        d3.select("#actual-investors-container").style("visibility", "hidden");
         const lead_prefix = this.value;
         var search_results = [];
         if (suggested_lead) {
@@ -183,6 +187,19 @@ function populateLeadSelector(suggested_lead, search_results, round, company) {
 }
 
 function loadInvestorRecs(round, lead, company) {
+    const response = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
+    investor_graph = response.co_investors;
+    // Load actual investors in round
+    d3.select("#company-round").text(company + " Investors on " + round + ":");
+    d3.select("#actual-investors")
+        .selectAll("li")
+        .data(Array.from(company_to_round_investors[company][round]))
+        .join("li")
+        .text(function (investor) {
+            return investor
+        });
+    arrangeLayout(response);
+    generateLeadGraph(lead, investor_graph);
     // Update graph when category filter checkboxes modified
     d3.selectAll(".filter_category").on("input", function () {
         const type = this.value;
@@ -196,10 +213,6 @@ function loadInvestorRecs(round, lead, company) {
         investor_graph = response.co_investors;
         generateLeadGraph(lead, investor_graph);
     });
-    const response = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
-    investor_graph = response.co_investors;
-    arrangeLayout(response);
-    generateLeadGraph(lead, investor_graph);
 }
 
 function arrangeLayout(response){
@@ -210,6 +223,15 @@ function arrangeLayout(response){
     d3.select("#filter-container")
         .style("visibility", "visible")
         .style("top", bottom_lead + 30 + "px");
+    // Set filtered numbers
+    d3.select("#filter_title").text("Matching Industry Filter (" + response.num_no_filter + ")");
+    d3.select("#filter_cousins").text(" Filter Cousins (" + response.num_filtered_cousins + ")");
+    d3.select("#filter_investors").text(" Filter Investors (" + response.num_filtered_investors + ")");
+    // Display actual investors in round
+    const bottom_filter = d3.select("#filter-container").node().getBoundingClientRect().bottom;
+    d3.select("#actual-investors-container")
+        .style("visibility", "visible")
+        .style("top", bottom_filter + "px");
     // Compute size and position of svg
     const container_right = d3.select(".container").node().getBoundingClientRect().right;
     width = window.innerWidth - container_right;
@@ -218,10 +240,6 @@ function arrangeLayout(response){
         .attr("width", width - 30)
         .attr("height", height - 30)
         .style("left", container_right + 30 + "px")
-    // Set filtered numbers
-    d3.select("#filter_title").text("Matching Industry Filter (" + response.num_no_filter + ")");
-    d3.select("#filter_cousins").text(" Filter Cousins (" + response.num_filtered_cousins + ")");
-    d3.select("#filter_investors").text(" Filter Investors (" + response.num_filtered_investors + ")");
 }
 
 function generateLeadGraph(lead, investor_graph) {
