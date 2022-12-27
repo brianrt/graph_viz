@@ -113,6 +113,9 @@ function loadFundingRounds(company) {
             return round;
         })
         .on("click", function (e, round) {
+            // Highlight Selected
+            d3.select("#round-selector").selectAll("tr").style("background-color","white");
+            d3.select(this).style("background-color","lightgray");
             loadLeadSearch(round, company_to_leads[round], company);
         });
 }
