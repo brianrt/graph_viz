@@ -93,7 +93,6 @@ function intialize() {
 }
 
 function loadFundingRounds(company) {
-    console.log(company);
     const company_to_leads = generate_round_leads(company);
     const rounds = Object.keys(company_to_leads).sort();
     d3.select("#company-industry").text(company + " industries:");
@@ -190,15 +189,17 @@ function loadInvestorRecs(round, lead, company) {
         } else {
             filter_investors = checked;
         }
-        investor_graph = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
+        const response = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
+        investor_graph = response.co_investors;
         generateLeadGraph(lead, investor_graph);
     });
-    investor_graph  = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
-    arrangeLayout();
+    const response = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
+    investor_graph = response.co_investors;
+    arrangeLayout(response);
     generateLeadGraph(lead, investor_graph);
 }
 
-function arrangeLayout(){
+function arrangeLayout(response){
     // Move container to left
     d3.selectAll(".center").classed("center", false);
     // Compute height for checkbox and unhide
@@ -214,7 +215,10 @@ function arrangeLayout(){
         .attr("width", width - 30)
         .attr("height", height - 30)
         .style("left", container_right + 30 + "px")
-
+    // Set filtered numbers
+    d3.select("#filter_title").text("Matching Industry Filter (" + response.num_no_filter + ")");
+    d3.select("#filter_cousins").text(" Filter Cousins (" + response.num_filtered_cousins + ")");
+    d3.select("#filter_investors").text(" Filter Investors (" + response.num_filtered_investors + ")");
 }
 
 function generateLeadGraph(lead, investor_graph) {
