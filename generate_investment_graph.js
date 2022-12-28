@@ -215,7 +215,7 @@ export function generate_round_leads(company) {
         const round_date = rounds[j];
         const investors = company_to_round_investors[company][round_date];
         var lead_investor;
-        var max_investments = 0;
+        var max_investments = -1;
         investors.forEach(investor => {
             // Compute num investments up until round_date
             const investor_round_dates = Object.keys(investor_to_rounds[investor]);

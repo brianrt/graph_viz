@@ -20,6 +20,9 @@ var width;
 var height;
 var filter_cousins = false;
 var filter_investors = false;
+var company_to_round_bottom = {};
+var company_to_lead_bottom = {};
+var company_to_filter_bottom = {};
 
 import {
     initialize_investments,
@@ -124,10 +127,13 @@ function loadFundingRounds(company) {
 
 function loadLeadSearch(round, suggested_lead, company) {
     // Dynamically set lead search top attribute
-    const bottom_round = d3.select("#round-container").node().getBoundingClientRect().bottom;
+    if (!(company in company_to_round_bottom)) {
+        company_to_round_bottom[company] = d3.select("#round-container").node().getBoundingClientRect().bottom;
+    }
+    const round_bottom = company_to_round_bottom[company];
     d3.select("#lead-container")
         .style("visibility", "visible")
-        .style("top", bottom_round + 30 + "px");
+        .style("top", round_bottom + 30 + "px");
     d3.select("#lead-search").property("value", "");
     // Hide everything below Leads
     d3.select("#filter-container").style("visibility", "hidden");
@@ -191,14 +197,9 @@ function loadInvestorRecs(round, lead, company) {
     investor_graph = response.co_investors;
     // Load actual investors in round
     d3.select("#company-round").text(company + " Investors on " + round + ":");
-    d3.select("#actual-investors")
-        .selectAll("li")
-        .data(Array.from(company_to_round_investors[company][round]))
-        .join("li")
-        .text(function (investor) {
-            return investor
-        });
-    arrangeLayout(response);
+    const actual_investors = Array.from(company_to_round_investors[company][round]);
+    loadActualInvestors(actual_investors, lead);
+    arrangeLayout(response, company);
     generateLeadGraph(lead, investor_graph);
     // Update graph when category filter checkboxes modified
     d3.selectAll(".filter_category").on("input", function () {
@@ -211,27 +212,54 @@ function loadInvestorRecs(round, lead, company) {
         }
         const response = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
         investor_graph = response.co_investors;
+        loadActualInvestors(actual_investors, lead);
         generateLeadGraph(lead, investor_graph);
     });
 }
 
-function arrangeLayout(response){
+function loadActualInvestors(actual_investors, lead) {
+    const investor_recs = new Set(investor_graph.map(obj => obj.investor));
+    d3.select("#actual-investors")
+        .selectAll("li")
+        .data(actual_investors)
+        .join("li")
+        .text(function (investor) {
+            return investor
+        })
+        .style("color", function(investor) {
+            if (investor == lead) {
+                return "green";
+            } else {
+                if (investor_recs.has(investor)) {
+                    return "green";
+                }
+            }
+        });
+}
+
+function arrangeLayout(response, company){
     // Move container to left
     d3.selectAll(".center").classed("center", false);
     // Compute height for checkbox and unhide
-    const bottom_lead = d3.select("#lead-container").node().getBoundingClientRect().bottom;
+    if (!(company in company_to_lead_bottom)) {
+        company_to_lead_bottom[company] = d3.select("#lead-container").node().getBoundingClientRect().bottom;
+    }
+    const lead_bottom = company_to_lead_bottom[company];
     d3.select("#filter-container")
         .style("visibility", "visible")
-        .style("top", bottom_lead + 30 + "px");
+        .style("top", lead_bottom + 30 + "px");
     // Set filtered numbers
     d3.select("#filter_title").text("Matching Industry Filter (" + response.num_no_filter + ")");
     d3.select("#filter_cousins").text(" Filter Cousins (" + response.num_filtered_cousins + ")");
     d3.select("#filter_investors").text(" Filter Investors (" + response.num_filtered_investors + ")");
     // Display actual investors in round
-    const bottom_filter = d3.select("#filter-container").node().getBoundingClientRect().bottom;
+    if (!(company in company_to_filter_bottom)) {
+        company_to_filter_bottom[company] = d3.select("#filter-container").node().getBoundingClientRect().bottom;
+    }
+    const filter_bottom = company_to_filter_bottom[company];
     d3.select("#actual-investors-container")
         .style("visibility", "visible")
-        .style("top", bottom_filter + "px");
+        .style("top", filter_bottom + "px");
     // Compute size and position of svg
     const container_right = d3.select(".container").node().getBoundingClientRect().right;
     width = window.innerWidth - container_right;
