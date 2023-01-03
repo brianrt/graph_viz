@@ -8,12 +8,15 @@ const step_size = 150;
 // Colors
 const lead_main = "#B4C6E4";
 const lead_outline = "#87A3D4";
-const investor_main = "#02CAA2";
-const investor_outline = "#02A282";
+const investor_match_main = "#02CAA2";
+const investor_match_outline = "#02A282";
+const investor_no_match_main = "#FFEEB7";
+const investor_no_match_outline = "#FFE68B";
 const cousin_main = "#F17EA4";
 const cousin_outline = "#CA1652";
 
 var investor_graph;
+var actual_investors;
 var nodes = [];
 var links = [];
 var width;
@@ -197,7 +200,7 @@ function loadInvestorRecs(round, lead, company) {
     investor_graph = response.co_investors;
     // Load actual investors in round
     d3.select("#company-round").text(company + " Investors on " + round + ":");
-    const actual_investors = Array.from(company_to_round_investors[company][round]);
+    actual_investors = company_to_round_investors[company][round];
     loadActualInvestors(actual_investors, lead);
     arrangeLayout(response, company);
     generateLeadGraph(lead, investor_graph);
@@ -444,12 +447,24 @@ function runSimulation(isLeadGraph) {
         })
         .attr("fill", function (node) {
             if (node.type == "lead") return lead_main;
-            else if (node.type == "investor") return investor_main;
+            else if (node.type == "investor") {
+                if (actual_investors.has(node.name)) {
+                    return investor_match_main;
+                } else {
+                    return investor_no_match_main;
+                }
+            }
             else return cousin_main;
         })
         .attr("stroke", function (node) {
             if (node.type == "lead") return lead_outline;
-            else if (node.type == "investor") return investor_outline;
+            else if (node.type == "investor") {
+                if (actual_investors.has(node.name)) {
+                    return investor_match_outline;
+                } else {
+                    return investor_no_match_outline;
+                }
+            }
             else return cousin_outline;
         })
         .on("click", function (e, node) {
