@@ -1,9 +1,10 @@
 const radius_x = 50;
 const radius_y = 50;
-const min_radius = 25;
+const min_radius = 30;
 const max_radius = 130;
-const min_distance = 200;
-const step_size = 150;
+const delta_radius = 10;
+const min_distance = 250;
+const step_size = 160;
 
 // Colors
 const lead_main = "#B4C6E4";
@@ -26,6 +27,7 @@ var filter_investors = false;
 var company_to_round_bottom = {};
 var company_to_lead_bottom = {};
 var company_to_filter_bottom = {};
+var is_cousin_graph = false;
 
 import {
     initialize_investments,
@@ -274,13 +276,9 @@ function arrangeLayout(response, company){
 }
 
 function generateLeadGraph(lead, investor_graph) {
-    if (nodes.length > 0 && nodes[0].name == lead) {
-        // Discard all but lead
-        nodes = [copyNode(nodes[0])];
-    } else {
-        nodes = [];
-        nodes.push({ name: lead, type: "lead", count: 2 });
-    }
+    is_cousin_graph = false;
+    nodes = [];
+    nodes.push({ name: lead, type: "lead", count: 4 });
     links = [];
 
     // Gather all values of num_co_investments
@@ -323,6 +321,7 @@ function copyNode(node) {
 }
 
 function generateCousinsGraph(lead, investor_obj) {
+    is_cousin_graph = true;
     const portfolio_cousins = investor_obj.portfolio_cousins;
     const investor = investor_obj.investor;
 
@@ -380,7 +379,7 @@ function runSimulation(isLeadGraph) {
             .force(
                 "collision",
                 d3.forceCollide().radius(function (node) {
-                    return Math.min(min_radius * node.count, max_radius);
+                    return min_radius + (delta_radius * (node.count-1));
                 })
             )
             .on("tick", ticked);
@@ -435,13 +434,19 @@ function runSimulation(isLeadGraph) {
         })
         .attr("rx", function (node) {
             if (node.type == "lead" || node.type == "investor") {
-                return Math.min(min_radius * node.count, max_radius);
+                if (is_cousin_graph) {
+                    return radius_x * 2;
+                }
+                return (min_radius + (delta_radius * (node.count-1)));
             }
             return radius_x;
         })
         .attr("ry", function (node) {
             if (node.type == "lead" || node.type == "investor") {
-                return Math.min(min_radius * node.count, max_radius);
+                if (is_cousin_graph) {
+                    return radius_y * 2;
+                }
+                return min_radius + (delta_radius * (node.count-1));
             }
             return radius_y;
         })
@@ -528,9 +533,19 @@ function runSimulation(isLeadGraph) {
                 return d.x;
             })
             .attr("y", function (d) {
-                return d.y;
+                return d.y+3;
             })
             .text(function (d) {
+                let sub_length = 7 + (3 * (d.count - 1));
+                const str_length = d.name.length;
+                if (d.type == "cousin") {
+                    sub_length = 12;
+                } else if (is_cousin_graph) {
+                    sub_length = str_length;
+                }
+                if (str_length > sub_length) {
+                    return d.name.substring(0,sub_length) + "...";
+                }
                 return d.name;
             });
     }
