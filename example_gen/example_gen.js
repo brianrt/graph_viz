@@ -3,19 +3,21 @@ const radius_y = 50;
 const min_radius = 30;
 const max_radius = 130;
 const delta_radius = 10;
-const min_distance = 250;
-const step_size = 160;
+const min_distance = 230;
+const step_size = 150;
+const hover_count = 5;
 
 // Colors
 const lead_main = "#B4C6E4";
 const lead_outline = "#87A3D4";
 const investor_match_main = "#02CAA2";
 const investor_match_outline = "#02A282";
-const investor_no_match_main = "#FFEEB7";
-const investor_no_match_outline = "#FFE68B";
+const investor_no_match_main = "#A6FEEC";
+const investor_no_match_outline = "#02CAA2";
 const cousin_main = "#F17EA4";
 const cousin_outline = "#CA1652";
 
+var simulation;
 var investor_graph;
 var actual_investors;
 var nodes = [];
@@ -278,7 +280,7 @@ function arrangeLayout(response, company){
 function generateLeadGraph(lead, investor_graph) {
     is_cousin_graph = false;
     nodes = [];
-    nodes.push({ name: lead, type: "lead", count: 4 });
+    nodes.push({ name: lead, type: "lead", count: hover_count, is_hover: false });
     links = [];
 
     // Gather all values of num_co_investments
@@ -300,7 +302,7 @@ function generateLeadGraph(lead, investor_graph) {
         const investor_obj = investor_graph[i];
         const related_investor = investor_obj.investor;
         const count = investor_obj.num_co_investments;
-        nodes.push({ name: related_investor, type: "investor", count });
+        nodes.push({ name: related_investor, type: "investor", count, is_hover: false });
         links.push({
             source: i + 1,
             target: 0,
@@ -338,7 +340,7 @@ function generateCousinsGraph(lead, investor_obj) {
     } else {
         nodes = [
             { name: lead, type: "lead", count: 2, x: width / 2, y: height / 2 },
-            { name: investor, type: "investor", count: investor_obj.num_co_investments, x: width / 2, y: height / 2 },
+            { name: investor, type: "investor", count: investor_obj.num_co_investments, x: width / 2, y: height / 2, is_hover: true },
         ];
     }
     links = [];
@@ -346,7 +348,7 @@ function generateCousinsGraph(lead, investor_obj) {
     // Generate nodes and links
     var i = 0;
     portfolio_cousins.forEach(function (portfolio_cousin) {
-        nodes.push({ name: portfolio_cousin, type: "cousin", x: width / 2, y: height / 2 });
+        nodes.push({ name: portfolio_cousin, type: "cousin", count: 2, x: width / 2, y: height / 2 });
         links.push({
             source: 1,
             target: i + 2,
@@ -363,7 +365,7 @@ function generateCousinsGraph(lead, investor_obj) {
 
 function runSimulation(isLeadGraph) {
     if (isLeadGraph) {
-        const simulation = d3
+        simulation = d3
             .forceSimulation(nodes)
             .force("charge", d3.forceManyBody().strength(-1000))
             .force("center", d3.forceCenter(width / 2, height / 2))
@@ -379,12 +381,16 @@ function runSimulation(isLeadGraph) {
             .force(
                 "collision",
                 d3.forceCollide().radius(function (node) {
-                    return min_radius + (delta_radius * (node.count-1));
+                    let count = node.count;
+                    if (node.is_hover) {
+                        count = hover_count;
+                    }
+                    return min_radius + (delta_radius * (count-1));
                 })
             )
             .on("tick", ticked);
     } else {
-        const simulation = d3
+        simulation = d3
             .forceSimulation(nodes)
             .force(
                 "x",
@@ -432,24 +438,6 @@ function runSimulation(isLeadGraph) {
         .attr("cy", function (d) {
             return d.y;
         })
-        .attr("rx", function (node) {
-            if (node.type == "lead" || node.type == "investor") {
-                if (is_cousin_graph) {
-                    return radius_x * 2;
-                }
-                return (min_radius + (delta_radius * (node.count-1)));
-            }
-            return radius_x;
-        })
-        .attr("ry", function (node) {
-            if (node.type == "lead" || node.type == "investor") {
-                if (is_cousin_graph) {
-                    return radius_y * 2;
-                }
-                return min_radius + (delta_radius * (node.count-1));
-            }
-            return radius_y;
-        })
         .attr("fill", function (node) {
             if (node.type == "lead") return lead_main;
             else if (node.type == "investor") {
@@ -483,14 +471,25 @@ function runSimulation(isLeadGraph) {
                 console.log(node.name);
                 for (var i = 0; i < lead_investors.length; i++) {
                     const investor_candidate = lead_investors[i];
-                    console.log(investor_candidate);
                     if (investor_candidate.investor == node.name) {
                         generateCousinsGraph(lead, investor_candidate);
                         break;
                     }
                 }
             }
-        });
+        }).on("mouseover", function(e, node) {
+            node.is_hover = true;
+            if (!is_cousin_graph) {
+                simulation.alphaTarget(0.1);
+                simulation.force("collision").initialize(nodes);
+            }
+        }).on("mouseout", function(e, node) {
+            node.is_hover = false;
+            if (!is_cousin_graph) {
+                simulation.force("collision").initialize(nodes);
+            }
+        })
+        ;
 
     function updateLinks() {
         d3.select(".links")
@@ -511,6 +510,17 @@ function runSimulation(isLeadGraph) {
             });
     }
 
+    function updateRadius(node, radius) {
+        if (node.type == "lead" || node.type == "investor") {
+            let count = node.count;
+            if (is_cousin_graph || node.is_hover) {
+                count = Math.max(count, hover_count);
+            }
+            return (min_radius + (delta_radius * (count-1)));
+        }
+        return radius;
+    }
+
     function updateNodes() {
         d3.select(".nodes")
             .selectAll("ellipse")
@@ -521,6 +531,13 @@ function runSimulation(isLeadGraph) {
             })
             .attr("cy", function (d) {
                 return d.y;
+            })
+            .transition().duration('40')
+            .attr("rx", function (node) {
+                return updateRadius(node, radius_x);
+            })
+            .attr("ry", function (node) {
+                return updateRadius(node, radius_y);
             });
     }
 
@@ -535,8 +552,13 @@ function runSimulation(isLeadGraph) {
             .attr("y", function (d) {
                 return d.y+3;
             })
+            .attr("pointer-events", "none")
             .text(function (d) {
-                let sub_length = 7 + (3 * (d.count - 1));
+                var count = d.count;
+                if (d.is_hover) {
+                    count = Math.max(hover_count + 2, count);
+                }
+                let sub_length = 6 + (3 * (count - 1));
                 const str_length = d.name.length;
                 if (d.type == "cousin") {
                     sub_length = 12;
