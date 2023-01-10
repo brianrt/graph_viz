@@ -290,10 +290,7 @@ function generateLeadGraph(lead, investor_graph_input) {
 
     // Splice array based on num_investors_to_show
     let num_investors_to_show = d3.select("#investors-shown").property("value");
-    if (num_investors_to_show == '') {
-        num_investors_to_show = investor_graph_input.length;
-        d3.select("#investors-shown").property("value", num_investors_to_show);
-    } else if (num_investors_to_show < 0) {
+    if (num_investors_to_show == '' || num_investors_to_show < 0) {
         num_investors_to_show = 0;
     }
     let investor_graph = [...investor_graph_input];
