@@ -1,10 +1,10 @@
 const radius_x = 50;
 const radius_y = 50;
-const min_radius = 30;
+const min_radius = 25;
 const max_radius = 130;
-const delta_radius = 10;
-const min_distance = 230;
-const step_size = 150;
+const delta_radius = 7;
+const min_distance = 220;
+const step_size = 140;
 const hover_count = 5;
 
 // Colors
@@ -222,6 +222,11 @@ function loadInvestorRecs(round, lead, company) {
         loadActualInvestors(actual_investors, lead);
         generateLeadGraph(lead, investor_graph);
     });
+    // Update graph when slider is modified
+    d3.select("#investors-shown")
+        .on("input", function() {
+            generateLeadGraph(lead, investor_graph);
+        });
 }
 
 function loadActualInvestors(actual_investors, lead) {
@@ -277,11 +282,22 @@ function arrangeLayout(response, company){
         .style("left", container_right + 30 + "px")
 }
 
-function generateLeadGraph(lead, investor_graph) {
+function generateLeadGraph(lead, investor_graph_input) {
     is_cousin_graph = false;
     nodes = [];
     nodes.push({ name: lead, type: "lead", count: hover_count, is_hover: false });
     links = [];
+
+    // Splice array based on num_investors_to_show
+    let num_investors_to_show = d3.select("#investors-shown").property("value");
+    if (num_investors_to_show == '') {
+        num_investors_to_show = investor_graph_input.length;
+        d3.select("#investors-shown").property("value", num_investors_to_show);
+    } else if (num_investors_to_show < 0) {
+        num_investors_to_show = 0;
+    }
+    let investor_graph = [...investor_graph_input];
+    investor_graph.splice(num_investors_to_show, investor_graph.length - num_investors_to_show);
 
     // Gather all values of num_co_investments
     var counts = new Set();

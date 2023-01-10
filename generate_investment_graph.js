@@ -302,7 +302,7 @@ export function find_co_investors_before_date(lead, company, company_round_date,
                         };
                     }
                     co_investors_temp[cousin_investor].portfolio_cousins.add(cousin);
-                    co_investors_temp[cousin_investor].num_co_investments = co_investors_temp[cousin_investor].portfolio_cousins.size;
+                    co_investors_temp[cousin_investor].num_co_investments += 1;
                 }
             });
         });

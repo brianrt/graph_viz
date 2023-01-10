@@ -31,6 +31,15 @@
     line-height: 25px;
     margin-top: 5px;
 }
+#investors-shown-label {
+    margin-top: 25px;
+}
+#investors-shown {
+    width: 80px;
+    font: 20px Arial;
+    height: 30px;
+    line-height: 30px;
+}
 #company-industry {
     margin-top: 15px;
 }
