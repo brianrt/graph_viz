@@ -34,6 +34,7 @@ var is_cousin_graph = false;
 import {
     initialize_investments,
     find_co_investors_before_date,
+    find_co_investors_for_multiple_investors,
     generate_round_leads,
     company_to_categories,
     company_to_round_investors,
@@ -201,6 +202,7 @@ function populateLeadSelector(suggested_lead, search_results, round, company) {
 
 function loadInvestorRecs(round, lead, company) {
     const response = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
+    // const response2 = find_co_investors_for_multiple_investors(["Y Combinator", "Intel Capital", "BEV Capital"], company, round, filter_cousins, filter_investors);
     investor_graph = response.co_investors;
     // Load actual investors in round
     d3.select("#company-round").text(company + " Investors on " + round + ":");
@@ -261,9 +263,9 @@ function arrangeLayout(response, company){
         .style("visibility", "visible")
         .style("top", lead_bottom + 30 + "px");
     // Set filtered numbers
-    d3.select("#filter_title").text("Matching Industry Filter (" + response.num_no_filter + ")");
-    d3.select("#filter_cousins").text(" Filter Cousins (" + response.num_filtered_cousins + ")");
-    d3.select("#filter_investors").text(" Filter Investors (" + response.num_filtered_investors + ")");
+    d3.select("#filter_title").text("Matching Industry Filter (" + response.no_filter.size + ")");
+    d3.select("#filter_cousins").text(" Filter Cousins (" + response.filtered_cousins.size + ")");
+    d3.select("#filter_investors").text(" Filter Investors (" + response.filtered_investors.size + ")");
     // Display actual investors in round
     if (!(company in company_to_filter_bottom)) {
         company_to_filter_bottom[company] = d3.select("#filter-container").node().getBoundingClientRect().bottom;

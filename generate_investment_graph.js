@@ -320,8 +320,75 @@ export function find_co_investors_before_date(lead, company, company_round_date,
     });
     return {
         co_investors,
-        num_no_filter: co_investors_no_filter.size,
-        num_filtered_cousins: co_investors_cousin_filter.size,
-        num_filtered_investors: co_investors_investor_filter.size
+        no_filter: co_investors_no_filter,
+        filtered_cousins: co_investors_cousin_filter,
+        filtered_investors: co_investors_investor_filter
+    };
+}
+
+/*
+    Returns all investors that co-invested with any input up to the provided round_date
+
+    Returns: Array of co_investors with lead, containing all portfolio cousins they've co_invested in
+    {
+        co_investors: [
+            {
+                investor: co_investor,
+                num_co_investments: <sum of num_co_investments across all input investors and all rounds>,
+                portfolio_cousins: {
+                    input_investor_1: Set([portfolio_cousin_1, portfolio_cousin_2, ...])
+                    input_investor_2: Set([portfolio_cousin_1, portfolio_cousin_3, ...])
+                }
+            },
+            {...}
+        ]
+        no_filter: set(no_filter1, no_filter2, ...)),
+        filtered_cousins: y,
+        filtered_investors: z
+    }
+*/
+export function find_co_investors_for_multiple_investors(input_investors, company, company_round_date, filter_cousins, filter_investors) {
+    // Keep track of all co_investors in three scenarios
+    var co_investors_no_filter = new Set();
+    var co_investors_cousin_filter = new Set();
+    var co_investors_investor_filter = new Set();
+
+    let co_investors_temp = {};
+    for (var i = 0; i < input_investors.length; i++) {
+        const input_investor = input_investors[i];
+        const single_input_co_investors = find_co_investors_before_date(input_investor, company, company_round_date, filter_cousins, filter_investors);
+        for (var j = 0; j < single_input_co_investors.co_investors.length; j++) {
+            const single_co_investor = single_input_co_investors.co_investors[j];
+            const co_investor = single_co_investor.investor;
+            if (!(co_investor in co_investors_temp)) {
+                co_investors_temp[co_investor] = {
+                    num_co_investments: 0,
+                    portfolio_cousins: {}
+                };
+            }
+            co_investors_temp[co_investor].num_co_investments += single_co_investor.num_co_investments;
+            co_investors_temp[co_investor].portfolio_cousins[input_investor] = single_co_investor.portfolio_cousins;
+        }
+        co_investors_no_filter = new Set([...co_investors_no_filter, ...single_input_co_investors.no_filter]);
+        co_investors_cousin_filter = new Set([...co_investors_cousin_filter, ...single_input_co_investors.filtered_cousins]);
+        co_investors_investor_filter = new Set([...co_investors_investor_filter, ...single_input_co_investors.filtered_investors]);
+    }
+
+    // Sort by num_co_investments
+    const co_investors = Object.keys(co_investors_temp).map(function(co_investor) {
+        return {
+            investor: co_investor,
+            ...co_investors_temp[co_investor]
+        };
+    });
+    co_investors.sort(function(first, second) {
+        return second.num_co_investments - first.num_co_investments;
+    });
+
+    return {
+        co_investors,
+        no_filter: co_investors_no_filter,
+        filtered_cousins: co_investors_cousin_filter,
+        filtered_investors: co_investors_investor_filter
     };
 }
