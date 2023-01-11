@@ -30,6 +30,7 @@ var company_to_round_bottom = {};
 var company_to_lead_bottom = {};
 var company_to_filter_bottom = {};
 var is_cousin_graph = false;
+var selected_investors = [];
 
 import {
     initialize_investments,
@@ -117,6 +118,7 @@ function loadFundingRounds(company) {
             return industry
         });
     d3.select("#round-container").style("visibility", "visible");
+    console.log(rounds);
     d3.select("#round-selector")
         .selectAll("tr")
         .data(rounds)
@@ -126,6 +128,8 @@ function loadFundingRounds(company) {
             return round;
         })
         .on("click", function (e, round) {
+            // Clear selected investors
+            selected_investors = [];
             // Highlight Selected
             d3.select("#round-selector").selectAll("tr").style("background-color","white");
             d3.select(this).style("background-color","lightgray");
@@ -157,7 +161,7 @@ function loadLeadSearch(round, suggested_lead, company) {
         d3.select("#filter-container").style("visibility", "hidden");
         d3.select("#actual-investors-container").style("visibility", "hidden");
         const lead_prefix = this.value;
-        var search_results = [];
+        search_results = [];
         if (suggested_lead) {
             search_results = [suggested_lead + " (Suggested Lead)"];
         }
@@ -187,8 +191,8 @@ function populateLeadSelector(suggested_lead, search_results, round, company) {
             return lead;
         })
         .on("click", function (e, lead) {
-            // Set clicked lead and clear results
-            d3.select("#lead-search").property("value", lead);
+            // Clear search results
+            d3.select("#lead-search").property("value", "");
             d3.select("#lead-selector")
                 .selectAll("tr")
                 .data([])
@@ -196,8 +200,32 @@ function populateLeadSelector(suggested_lead, search_results, round, company) {
             if (suggested_lead && lead.includes(" (Suggested Lead)")) {
                 lead = suggested_lead;
             }
-            loadInvestorRecs(round, lead, company);
+            // Populate investor selector table
+            selected_investors.push(lead);
+            populateSelectedInvestorsTable(selected_investors, company);
         });
+}
+
+function populateSelectedInvestorsTable(selected_investors, company) {
+    // Compute height for checkbox and unhide
+    if (!(company in company_to_lead_bottom)) {
+        company_to_lead_bottom[company] = d3.select("#lead-container").node().getBoundingClientRect().bottom;
+    }
+    const lead_bottom = company_to_lead_bottom[company];
+    d3.select("#investors-container")
+        .style("visibility", "visible")
+        .style("top", lead_bottom + 30 + "px")
+    // Populate selected investors
+    console.log(selected_investors);
+    d3.select("#selected-investors")
+        .selectAll("tr")
+        .data(selected_investors)
+        .join("tr")
+        .text(function(selected_investor){
+            return selected_investor;
+        });
+
+// loadInvestorRecs(round, lead, company);
 }
 
 function loadInvestorRecs(round, lead, company) {

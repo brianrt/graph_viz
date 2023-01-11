@@ -82,6 +82,9 @@ table {
 #round-selector {
     border-top: 1px solid;
 }
+#selected-investors {
+    border-top: 1px solid;
+}
 
 tr {
     font: 20px Arial;
