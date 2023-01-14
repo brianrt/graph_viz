@@ -13,9 +13,6 @@
             <input id="lead-search" type="text" placeholder="Select existing Investors">
             <table id="lead-selector"></table>
         </div>
-        <div class="container center" id="investors-container" style="visibility: hidden">
-            <table id="selected-investors"></table>
-        </div>
         <div class="container center" id="filter-container" style="visibility: hidden">
             <p id="filter_title">Matching Industry Filter</p>
             <div id="checkbox-container">
@@ -25,13 +22,17 @@
                 <label id="filter_investors" for="filter_investors"> Filter Investors</label><br>
             </div>
             <p id="investors-shown-label">Number of Investors Shown</p>
-            <input type="number" id="investors-shown" step="1" value="10">
+            <input type="number" id="investors-shown" step="1" value="1">
             <p id="company-industry"></p>
             <ul id="industries"></ul>
         </div>
         <div class="container center" id="actual-investors-container" style="visibility: hidden">
             <p id="company-round"></p>
             <ul id="actual-investors"></ul>
+        </div>
+        <div class="container center" id="investors-container" style="visibility: hidden">
+            <p>Selected Investors (Click to Remove)</p>
+            <table id="selected-investors"></table>
         </div>
         <svg>
             <g class="links"></g>

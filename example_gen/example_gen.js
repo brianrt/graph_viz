@@ -26,11 +26,13 @@ var width;
 var height;
 var filter_cousins = false;
 var filter_investors = false;
+var is_cousin_graph = false;
+var selected_investors = [];
+
+// Cache container positions
 var company_to_round_bottom = {};
 var company_to_lead_bottom = {};
 var company_to_filter_bottom = {};
-var is_cousin_graph = false;
-var selected_investors = [];
 
 import {
     initialize_investments,
@@ -63,10 +65,6 @@ d3.csv("/data/investments.csv").then(function (data) {
 function intialize() {
     const companies = Object.keys(company_to_categories).sort();
     d3.select("#company-search").on("input", function () {
-        d3.select("#round-container").style("visibility", "hidden");
-        d3.select("#lead-container").style("visibility", "hidden");
-        d3.select("#filter-container").style("visibility", "hidden");
-        d3.select("#actual-investors-container").style("visibility", "hidden");
         const company_prefix = this.value;
         var search_results = [];
         if (company_prefix.length > 0) {
@@ -150,6 +148,7 @@ function loadLeadSearch(round, suggested_lead, company) {
     // Hide everything below Leads
     d3.select("#filter-container").style("visibility", "hidden");
     d3.select("#actual-investors-container").style("visibility", "hidden");
+    d3.select("#investors-container").style("visibility", "hidden");
     var search_results = [];
     if (suggested_lead) {
         search_results = [suggested_lead + " (Suggested Lead)"];
@@ -160,6 +159,7 @@ function loadLeadSearch(round, suggested_lead, company) {
         // Hide everything below Leads
         d3.select("#filter-container").style("visibility", "hidden");
         d3.select("#actual-investors-container").style("visibility", "hidden");
+        d3.select("#investors-container").style("visibility", "hidden");
         const lead_prefix = this.value;
         search_results = [];
         if (suggested_lead) {
@@ -201,31 +201,37 @@ function populateLeadSelector(suggested_lead, search_results, round, company) {
                 lead = suggested_lead;
             }
             // Populate investor selector table
-            selected_investors.push(lead);
-            populateSelectedInvestorsTable(selected_investors, company);
+            if (!selected_investors.includes(lead)){
+                selected_investors.push(lead);
+            }
+            populateSelectedInvestors(selected_investors, round, company);
         });
 }
 
-function populateSelectedInvestorsTable(selected_investors, company) {
-    // Compute height for checkbox and unhide
-    if (!(company in company_to_lead_bottom)) {
-        company_to_lead_bottom[company] = d3.select("#lead-container").node().getBoundingClientRect().bottom;
-    }
-    const lead_bottom = company_to_lead_bottom[company];
-    d3.select("#investors-container")
-        .style("visibility", "visible")
-        .style("top", lead_bottom + 30 + "px")
+function populateSelectedInvestors(selected_investors, round, company) {
     // Populate selected investors
-    console.log(selected_investors);
     d3.select("#selected-investors")
         .selectAll("tr")
         .data(selected_investors)
         .join("tr")
         .text(function(selected_investor){
             return selected_investor;
+        })
+        .on("click", function(e, investor) {
+            if (selected_investors.length > 1) {
+                const index = selected_investors.indexOf(investor);
+                selected_investors.splice(index, 1);
+                d3.select("#selected-investors")
+                .selectAll("tr")
+                .data(selected_investors)
+                .join("tr")
+                .text(function(selected_investor){
+                    return selected_investor;
+                });
+                loadInvestorRecs(round, selected_investors[0], company);
+            }
         });
-
-// loadInvestorRecs(round, lead, company);
+    loadInvestorRecs(round, selected_investors[0], company);
 }
 
 function loadInvestorRecs(round, lead, company) {
@@ -302,6 +308,11 @@ function arrangeLayout(response, company){
     d3.select("#actual-investors-container")
         .style("visibility", "visible")
         .style("top", filter_bottom + "px");
+    // Compute height for selected investors container
+    const actual_investors_bottom = d3.select("#actual-investors-container").node().getBoundingClientRect().bottom;
+    d3.select("#investors-container")
+        .style("visibility", "visible")
+        .style("top", actual_investors_bottom + "px")
     // Compute size and position of svg
     const container_right = d3.select(".container").node().getBoundingClientRect().right;
     width = window.innerWidth - container_right;
@@ -522,8 +533,6 @@ function runSimulation(isLeadGraph) {
             }
         }).on("mouseover", function(e, node) {
             if (node.type == "investor") {
-                console.log(simulation.alpha());
-                console.log(simulation.alphaTarget());
                 node.is_hover = true;
                 if (!is_cousin_graph) {
                     simulation.alpha(0.05).restart();
