@@ -5,7 +5,7 @@ const max_radius = 130;
 const delta_radius = 7;
 const min_distance = 220;
 const step_size = 140;
-const hover_count = 5;
+const hover_count = 6;
 
 // Colors
 const lead_main = "#B4C6E4";
@@ -493,15 +493,22 @@ function runSimulation(isLeadGraph) {
                 }
             }
         }).on("mouseover", function(e, node) {
-            node.is_hover = true;
-            if (!is_cousin_graph) {
-                simulation.alphaTarget(0.1);
-                simulation.force("collision").initialize(nodes);
+            if (node.type == "investor") {
+                console.log(simulation.alpha());
+                console.log(simulation.alphaTarget());
+                node.is_hover = true;
+                if (!is_cousin_graph) {
+                    simulation.alpha(0.05).restart();
+                    simulation.force("collision").initialize(nodes);
+                }
             }
         }).on("mouseout", function(e, node) {
-            node.is_hover = false;
-            if (!is_cousin_graph) {
-                simulation.force("collision").initialize(nodes);
+            if (node.type == "investor") {
+                node.is_hover = false;
+                if (!is_cousin_graph) {
+                    simulation.alpha(0.05).restart();
+                    simulation.force("collision").initialize(nodes);
+                }
             }
         })
         ;
@@ -573,7 +580,7 @@ function runSimulation(isLeadGraph) {
                 if (d.is_hover) {
                     count = Math.max(hover_count + 2, count);
                 }
-                let sub_length = 6 + (3 * (count - 1));
+                let sub_length = 5 + (2 * (count - 1));
                 const str_length = d.name.length;
                 if (d.type == "cousin") {
                     sub_length = 12;
