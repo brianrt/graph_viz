@@ -335,9 +335,10 @@ export function find_co_investors_before_date(lead, company, company_round_date,
             {
                 investor: co_investor,
                 num_co_investments: <sum of num_co_investments across all input investors and all rounds>,
+                input_investors: [input_investor_1, input_investor_2]
                 portfolio_cousins: {
-                    input_investor_1: Set([portfolio_cousin_1, portfolio_cousin_2, ...])
-                    input_investor_2: Set([portfolio_cousin_1, portfolio_cousin_3, ...])
+                    portfolio_cousin_1: Set([input_investor_1, input_investor_2, ...])
+                    portfolio_cousin_2: Set([input_investor_2, input_investor_2, ...])
                 }
             },
             {...}
@@ -360,14 +361,23 @@ export function find_co_investors_for_multiple_investors(input_investors, compan
         for (var j = 0; j < single_input_co_investors.co_investors.length; j++) {
             const single_co_investor = single_input_co_investors.co_investors[j];
             const co_investor = single_co_investor.investor;
-            if (!(co_investor in co_investors_temp)) {
-                co_investors_temp[co_investor] = {
-                    num_co_investments: 0,
-                    portfolio_cousins: {}
-                };
+            if (!(input_investors.includes(co_investor))) {
+                if (!(co_investor in co_investors_temp)) {
+                    co_investors_temp[co_investor] = {
+                        num_co_investments: 0,
+                        portfolio_cousins: {},
+                        input_investors: []
+                    };
+                }
+                co_investors_temp[co_investor].num_co_investments += single_co_investor.num_co_investments;
+                co_investors_temp[co_investor].input_investors.push(input_investor);
+                single_co_investor.portfolio_cousins.forEach(portfolio_cousin => {
+                    if (!(portfolio_cousin in co_investors_temp[co_investor].portfolio_cousins)) {
+                        co_investors_temp[co_investor].portfolio_cousins[portfolio_cousin] = new Set();
+                    }
+                    co_investors_temp[co_investor].portfolio_cousins[portfolio_cousin].add(input_investor);
+                })
             }
-            co_investors_temp[co_investor].num_co_investments += single_co_investor.num_co_investments;
-            co_investors_temp[co_investor].portfolio_cousins[input_investor] = single_co_investor.portfolio_cousins;
         }
         co_investors_no_filter = new Set([...co_investors_no_filter, ...single_input_co_investors.no_filter]);
         co_investors_cousin_filter = new Set([...co_investors_cousin_filter, ...single_input_co_investors.filtered_cousins]);

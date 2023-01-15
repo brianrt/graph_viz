@@ -65,6 +65,11 @@ d3.csv("/data/investments.csv").then(function (data) {
 function intialize() {
     const companies = Object.keys(company_to_categories).sort();
     d3.select("#company-search").on("input", function () {
+        d3.select("#round-container").style("visibility", "hidden");
+        d3.select("#lead-container").style("visibility", "hidden");
+        d3.select("#filter-container").style("visibility", "hidden");
+        d3.select("#actual-investors-container").style("visibility", "hidden");
+        d3.select("#investors-container").style("visibility", "hidden");
         const company_prefix = this.value;
         var search_results = [];
         if (company_prefix.length > 0) {
@@ -116,7 +121,6 @@ function loadFundingRounds(company) {
             return industry
         });
     d3.select("#round-container").style("visibility", "visible");
-    console.log(rounds);
     d3.select("#round-selector")
         .selectAll("tr")
         .data(rounds)
@@ -154,12 +158,19 @@ function loadLeadSearch(round, suggested_lead, company) {
         search_results = [suggested_lead + " (Suggested Lead)"];
     }
     populateLeadSelector(suggested_lead, search_results, round, company);
-    const leads = Object.keys(investor_to_categories).sort();
-    d3.select("#lead-search").on("input", function () {
+    d3.select("#lead-search").on("click", function () {
+        search_results = [];
+        if (suggested_lead) {
+            search_results = [suggested_lead + " (Suggested Lead)"];
+        }
+        populateLeadSelector(suggested_lead, search_results, round, company);
         // Hide everything below Leads
         d3.select("#filter-container").style("visibility", "hidden");
         d3.select("#actual-investors-container").style("visibility", "hidden");
         d3.select("#investors-container").style("visibility", "hidden");
+    });
+    const leads = Object.keys(investor_to_categories).sort();
+    d3.select("#lead-search").on("input", function () {
         const lead_prefix = this.value;
         search_results = [];
         if (suggested_lead) {
@@ -228,22 +239,24 @@ function populateSelectedInvestors(selected_investors, round, company) {
                 .text(function(selected_investor){
                     return selected_investor;
                 });
-                loadInvestorRecs(round, selected_investors[0], company);
+                loadInvestorRecs(round, selected_investors, company);
             }
         });
-    loadInvestorRecs(round, selected_investors[0], company);
+    loadInvestorRecs(round, selected_investors, company);
 }
 
-function loadInvestorRecs(round, lead, company) {
-    const response = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
-    // const response2 = find_co_investors_for_multiple_investors(["Y Combinator", "Intel Capital", "BEV Capital"], company, round, filter_cousins, filter_investors);
+function loadInvestorRecs(round, selected_investors, company) {
+    // const response = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
+    console.log(selected_investors, company, round, filter_cousins, filter_investors);
+    const response = find_co_investors_for_multiple_investors(selected_investors, company, round, filter_cousins, filter_investors);
+    console.log(response);
     investor_graph = response.co_investors;
     // Load actual investors in round
     d3.select("#company-round").text(company + " Investors on " + round + ":");
     actual_investors = company_to_round_investors[company][round];
-    loadActualInvestors(actual_investors, lead);
+    loadActualInvestors(actual_investors, selected_investors);
     arrangeLayout(response, company);
-    generateLeadGraph(lead, investor_graph);
+    generateLeadGraph(selected_investors, investor_graph);
     // Update graph when category filter checkboxes modified
     d3.selectAll(".filter_category").on("input", function () {
         const type = this.value;
@@ -253,19 +266,20 @@ function loadInvestorRecs(round, lead, company) {
         } else {
             filter_investors = checked;
         }
-        const response = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
+        // const response = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
+        const response = find_co_investors_for_multiple_investors(selected_investors, company, round, filter_cousins, filter_investors);
         investor_graph = response.co_investors;
-        loadActualInvestors(actual_investors, lead);
-        generateLeadGraph(lead, investor_graph);
+        loadActualInvestors(actual_investors, selected_investors);
+        generateLeadGraph(selected_investors, investor_graph);
     });
     // Update graph when slider is modified
     d3.select("#investors-shown")
         .on("input", function() {
-            generateLeadGraph(lead, investor_graph);
+            generateLeadGraph(selected_investors, investor_graph);
         });
 }
 
-function loadActualInvestors(actual_investors, lead) {
+function loadActualInvestors(actual_investors, selected_investors) {
     const investor_recs = new Set(investor_graph.map(obj => obj.investor));
     d3.select("#actual-investors")
         .selectAll("li")
@@ -275,7 +289,7 @@ function loadActualInvestors(actual_investors, lead) {
             return investor
         })
         .style("color", function(investor) {
-            if (investor == lead) {
+            if (selected_investors.includes(investor)) {
                 return "green";
             } else {
                 if (investor_recs.has(investor)) {
@@ -323,11 +337,25 @@ function arrangeLayout(response, company){
         .style("left", container_right + 30 + "px")
 }
 
-function generateLeadGraph(lead, investor_graph_input) {
+function generateLeadGraph(selected_investors, investor_graph_input) {
     is_cousin_graph = false;
     nodes = [];
-    nodes.push({ name: lead, type: "lead", count: hover_count, is_hover: false });
+    const lead_name_to_index = {};
+    // Add input nodes as leads
+    for (var i = 0; i < selected_investors.length; i++) {
+        const lead = selected_investors[i];
+        nodes.push({ name: lead, type: "lead", count: hover_count, is_hover: false });
+        lead_name_to_index[lead] = i;
+    }
     links = [];
+    // Connect links together
+    for (var i = 1; i < selected_investors.length; i++) {
+        links.push({
+            source: i,
+            target: i - 1,
+            distance: 1,
+        });
+    }
 
     // Splice array based on num_investors_to_show
     let num_investors_to_show = d3.select("#investors-shown").property("value");
@@ -357,11 +385,17 @@ function generateLeadGraph(lead, investor_graph_input) {
         const related_investor = investor_obj.investor;
         const count = investor_obj.num_co_investments;
         nodes.push({ name: related_investor, type: "investor", count, is_hover: false });
-        links.push({
-            source: i + 1,
-            target: 0,
-            distance: max_count - countMap[count],
-        });
+        // Connect each investor to it's target lead
+        const connected_leads = investor_obj.input_investors;
+        for (var j = 0; j < connected_leads.length; j++) {
+            const connected_lead = connected_leads[j];
+            const connected_lead_index = lead_name_to_index[connected_lead];
+            links.push({
+                source: i + selected_investors.length,
+                target: connected_lead_index,
+                distance: max_count - countMap[count],
+            });
+        }
     }
     runSimulation(true);
 }
@@ -376,44 +410,49 @@ function copyNode(node) {
     };
 }
 
-function generateCousinsGraph(lead, investor_obj) {
+function generateCousinsGraph(investor_obj, investor_node_input) {
     is_cousin_graph = true;
-    const portfolio_cousins = investor_obj.portfolio_cousins;
-    const investor = investor_obj.investor;
 
     // Empty all nodes but lead and investor
-    const lead_node = copyNode(nodes[0]);
-    var investor_node;
+    var connected_selected_investors = new Set();
+    for (const cousin in investor_obj.portfolio_cousins) {
+        connected_selected_investors = new Set([...connected_selected_investors, ...investor_obj.portfolio_cousins[cousin]])
+    }
+
+    var selected_investor_nodes = [];
     for (var i = 0; i < nodes.length; i++) {
-        if (nodes[i].name == investor) {
-            investor_node = copyNode(nodes[i]);
+        if (connected_selected_investors.has(nodes[i].name)) {
+            selected_investor_nodes.push(copyNode(nodes[i]));
         }
     }
-    if (investor_node) {
-        nodes = [lead_node, investor_node];
-    } else {
-        nodes = [
-            { name: lead, type: "lead", count: 2, x: width / 2, y: height / 2 },
-            { name: investor, type: "investor", count: investor_obj.num_co_investments, x: width / 2, y: height / 2, is_hover: true },
-        ];
+    var investor_node = copyNode(investor_node_input);
+    nodes = [investor_node, ...selected_investor_nodes];
+    const lead_name_to_index = {};
+    for (var i = 0; i < nodes.length; i++) {
+        lead_name_to_index[nodes[i].name] = i;
     }
-    links = [];
 
     // Generate nodes and links
-    var i = 0;
-    portfolio_cousins.forEach(function (portfolio_cousin) {
+    links = [];
+    const portfolio_cousins = Object.keys(investor_obj.portfolio_cousins);
+    for (var i = 0; i < portfolio_cousins.length; i++) {
+        const portfolio_cousin = portfolio_cousins[i];
+        const cousin_root_investors = investor_obj.portfolio_cousins[portfolio_cousin];
+        const cousin_index = i + connected_selected_investors.size + 1;
         nodes.push({ name: portfolio_cousin, type: "cousin", count: 2, x: width / 2, y: height / 2 });
         links.push({
-            source: 1,
-            target: i + 2,
-        });
-        links.push({
             source: 0,
-            target: i + 2,
+            target: cousin_index
         });
-        i += 1;
-    });
-    console.log(nodes);
+        cousin_root_investors.forEach(function (cousin_root_investor) {
+            if (cousin_root_investor in lead_name_to_index) {
+                links.push({
+                    source: lead_name_to_index[cousin_root_investor],
+                    target: cousin_index,
+                });
+            }
+        });
+    }
     runSimulation(false);
 }
 
@@ -515,18 +554,15 @@ function runSimulation(isLeadGraph) {
             else return cousin_outline;
         })
         .on("click", function (e, node) {
-            const lead = nodes[0].name;
-            console.log(lead);
             if (node.type == "lead") {
-                generateLeadGraph(lead, investor_graph);
+                generateLeadGraph(selected_investors, investor_graph);
             } else if (node.type == "investor") {
                 // TODO: Make lookup of investors faster than iteration through whole list
                 const lead_investors = investor_graph;
-                console.log(node.name);
                 for (var i = 0; i < lead_investors.length; i++) {
                     const investor_candidate = lead_investors[i];
                     if (investor_candidate.investor == node.name) {
-                        generateCousinsGraph(lead, investor_candidate);
+                        generateCousinsGraph(investor_candidate, node);
                         break;
                     }
                 }
@@ -547,8 +583,7 @@ function runSimulation(isLeadGraph) {
                     simulation.force("collision").initialize(nodes);
                 }
             }
-        })
-        ;
+        });
 
     function updateLinks() {
         d3.select(".links")
@@ -598,6 +633,7 @@ function runSimulation(isLeadGraph) {
             .attr("ry", function (node) {
                 return updateRadius(node, radius_y);
             });
+        console.log('alpha: ' + simulation.alpha());
     }
 
     function updateText() {
