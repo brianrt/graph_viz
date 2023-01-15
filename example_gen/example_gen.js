@@ -633,7 +633,6 @@ function runSimulation(isLeadGraph) {
             .attr("ry", function (node) {
                 return updateRadius(node, radius_y);
             });
-        console.log('alpha: ' + simulation.alpha());
     }
 
     function updateText() {
