@@ -505,10 +505,19 @@ function runSimulation(isLeadGraph) {
                 d3
                     .forceY()
                     .y(function (node) {
-                        if (node.type == "lead" || node.type == "investor" || nodes.length == 3) {
+                        var num_cousins = 0;
+                        var num_investors = 0;
+                        for (var i in nodes) {
+                            if (nodes[i].type == "cousin") {
+                                num_cousins += 1;
+                            } else {
+                                num_investors += 1;
+                            }
+                        }
+                        if (node.type == "lead" || node.type == "investor" || num_cousins == 1) {
                             return height / 2;
                         } else {
-                            return height * ((node.index - 2) / (nodes.length - 3));
+                            return height * ((node.index - num_investors) / (num_cousins - 1));
                         }
                     })
                     .strength(function (node) {
@@ -610,7 +619,7 @@ function runSimulation(isLeadGraph) {
             if (is_cousin_graph || node.is_hover) {
                 count = Math.max(count, hover_count);
             }
-            return (min_radius + (delta_radius * (count-1)));
+            return Math.min(max_radius, (min_radius + (delta_radius * (count-1))));
         }
         return radius;
     }
