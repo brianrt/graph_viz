@@ -570,7 +570,7 @@ function runSimulation(isLeadGraph) {
         }).on("mouseover", function(e, node) {
             if (node.type == "investor") {
                 node.is_hover = true;
-                if (!is_cousin_graph) {
+                if (!is_cousin_graph && simulation.alpha() <= simulation.alphaMin()) {
                     simulation.alpha(0.05).restart();
                     simulation.force("collision").initialize(nodes);
                 }
@@ -578,7 +578,7 @@ function runSimulation(isLeadGraph) {
         }).on("mouseout", function(e, node) {
             if (node.type == "investor") {
                 node.is_hover = false;
-                if (!is_cousin_graph) {
+                if (!is_cousin_graph && simulation.alpha() <= simulation.alphaMin()) {
                     simulation.alpha(0.05).restart();
                     simulation.force("collision").initialize(nodes);
                 }
