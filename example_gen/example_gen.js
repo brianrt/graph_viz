@@ -491,9 +491,9 @@ function runSimulation(isLeadGraph) {
                     .forceX()
                     .x(function (node) {
                         if (node.type == "lead") {
-                            return 0;
+                            return width / 4;
                         } else if (node.type == "investor") {
-                            return width;
+                            return 3 / 4 * width;
                         } else {
                             return width / 2;
                         }
@@ -507,6 +507,8 @@ function runSimulation(isLeadGraph) {
                     .y(function (node) {
                         var num_cousins = 0;
                         var num_investors = 0;
+                        var height_c = (2/3) * height;
+                        var height_min = height/6;
                         for (var i in nodes) {
                             if (nodes[i].type == "cousin") {
                                 num_cousins += 1;
@@ -514,18 +516,16 @@ function runSimulation(isLeadGraph) {
                                 num_investors += 1;
                             }
                         }
-                        if (node.type == "lead" || node.type == "investor" || num_cousins == 1) {
-                            return height / 2;
+                        if (node.type == "lead" && num_investors > 2) {
+                            return (height_c * ((node.index - 1) / (num_investors - 2))) + height_min;
+                        } else if (node.type == "cousin" && num_cousins > 1) {
+                            return (height_c * ((node.index - num_investors) / (num_cousins - 1))) + height_min;
                         } else {
-                            return height * ((node.index - num_investors) / (num_cousins - 1));
+                            return (height_c / 2) + height_min;
                         }
                     })
-                    .strength(function (node) {
-                        console.log((nodes.length - 2) / 40);
-                        return (nodes.length - 2) / 40;
-                    })
             )
-            .force("link", d3.forceLink().links(links).strength(0.1))
+            .force("link", d3.forceLink().links(links).strength(0))
             .on("tick", ticked);
     }
 
