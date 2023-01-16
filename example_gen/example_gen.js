@@ -1,5 +1,5 @@
-const radius_x = 50;
-const radius_y = 50;
+const radius_x = 40;
+const radius_y = 40;
 const min_radius = 25;
 const max_radius = 130;
 const delta_radius = 7;
@@ -254,7 +254,7 @@ function loadInvestorRecs(round, selected_investors, company) {
     // Load actual investors in round
     d3.select("#company-round").text(company + " Investors on " + round + ":");
     actual_investors = company_to_round_investors[company][round];
-    loadActualInvestors(actual_investors, selected_investors);
+    loadActualInvestors(actual_investors, selected_investors, round, company);
     arrangeLayout(response, company);
     generateLeadGraph(selected_investors, investor_graph);
     // Update graph when category filter checkboxes modified
@@ -269,7 +269,7 @@ function loadInvestorRecs(round, selected_investors, company) {
         // const response = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
         const response = find_co_investors_for_multiple_investors(selected_investors, company, round, filter_cousins, filter_investors);
         investor_graph = response.co_investors;
-        loadActualInvestors(actual_investors, selected_investors);
+        loadActualInvestors(actual_investors, selected_investors, round, company);
         generateLeadGraph(selected_investors, investor_graph);
     });
     // Update graph when slider is modified
@@ -279,7 +279,7 @@ function loadInvestorRecs(round, selected_investors, company) {
         });
 }
 
-function loadActualInvestors(actual_investors, selected_investors) {
+function loadActualInvestors(actual_investors, selected_investors, round, company) {
     const investor_recs = new Set(investor_graph.map(obj => obj.investor));
     d3.select("#actual-investors")
         .selectAll("li")
@@ -296,7 +296,14 @@ function loadActualInvestors(actual_investors, selected_investors) {
                     return "green";
                 }
             }
-        });
+        })
+        .on("click", function(e, investor) {
+            // Populate investor selector table
+            if (!selected_investors.includes(investor)){
+                selected_investors.push(investor);
+                populateSelectedInvestors(selected_investors, round, company);
+            }
+        })
 }
 
 function arrangeLayout(response, company){

@@ -85,6 +85,9 @@ table {
 #selected-investors {
     border-top: 1px solid;
 }
+#actual-investors {
+    cursor: pointer;
+}
 
 tr {
     font: 20px Arial;
