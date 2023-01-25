@@ -516,6 +516,7 @@ function runSimulation(isLeadGraph) {
                     return 0;
                 }
             }))
+            .force("center", d3.forceCenter(width / 2, height / 2).strength((selected_investors.length == 1 && nodes.length > 2) ? 1 : 0))
             .force(
                 "link",
                 d3
@@ -540,7 +541,7 @@ function runSimulation(isLeadGraph) {
                 "collision",
                 d3.forceCollide().radius(function (node) {
                     return updateRadius(node);
-                }).strength(0.7)
+                }).strength(0.5)
             )
             .on("tick", ticked)
     } else {
@@ -642,7 +643,7 @@ function runSimulation(isLeadGraph) {
                 node.is_hover = true;
                 if (!is_cousin_graph) {
                     if (simulation.alpha() <= simulation.alphaMin()) {
-                        simulation.alpha(0.05).restart();
+                        simulation.alpha(0.01).restart();
                     }
                     simulation.force("collision").initialize(nodes);
                 }
@@ -652,7 +653,7 @@ function runSimulation(isLeadGraph) {
                 node.is_hover = false;
                 if (!is_cousin_graph) {
                     if (simulation.alpha() <= simulation.alphaMin()) {
-                        simulation.alpha(0.05).restart();
+                        simulation.alpha(0.01).restart();
                     }
                     simulation.force("collision").initialize(nodes);
                 }
