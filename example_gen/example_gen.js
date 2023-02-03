@@ -60,7 +60,7 @@ import {
     }
 */
 // Generate local graph for test startup and round from investments.csv
-d3.csv("../data/investments.csv").then(function (data) {
+d3.csv("/graph_viz/data/investments.csv").then(function (data) {
     initialize_investments(data);
     intialize();
 });
