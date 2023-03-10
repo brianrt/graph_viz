@@ -11,6 +11,7 @@ with open('../data/bulk_export/organizations.csv', 'r') as o_file:
             #org_reader
             o_reader = csv.DictReader(o_file)
             oc_writer = csv.DictWriter(oc_file, o_reader.fieldnames)
+            oc_writer.writeheader()
             for line in o_reader:
                 if line['uuid'] in fundraised_company_uuids:
                     oc_writer.writerow(line)
