@@ -60,9 +60,13 @@ import {
     }
 */
 // Generate local graph for test startup and round from investments.csv
-d3.csv("/graph_viz/data/investments.csv").then(function (data) {
-    initialize_investments(data);
-    intialize();
+d3.csv("/data/bulk_export/investments.csv").then(function (investments_data) {
+    d3.csv("/data/bulk_export/funding_rounds.csv").then(function (funding_rounds_data) {
+        d3.csv("/data/bulk_export/organizations_cleaned.csv").then(function (organizations_data) {
+            initialize_investments(investments_data, funding_rounds_data, organizations_data);
+            intialize();
+        });
+    });
 });
 
 function intialize() {
