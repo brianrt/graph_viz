@@ -5,15 +5,12 @@ const max_radius = 60;
 const hover_radius = 70;
 const delta_radius = 3;
 const min_distance = 220;
-const min_lead_distance = 400;
 const step_size = 100;
 const hover_count = 6;
 
 // Colors
 const lead_main = "#B4C6E4";
 const lead_outline = "#87A3D4";
-const investor_match_main = "#02CAA2";
-const investor_match_outline = "#02A282";
 const investor_no_match_main = "#A6FEEC";
 const investor_no_match_outline = "#02CAA2";
 const cousin_main = "#F17EA4";
@@ -21,7 +18,6 @@ const cousin_outline = "#CA1652";
 
 var simulation;
 var investor_graph;
-var actual_investors;
 var nodes = [];
 var links = [];
 var width;
@@ -30,21 +26,17 @@ var filter_cousins = false;
 var filter_investors = false;
 var is_cousin_graph = false;
 var selected_investors = [];
-var debug_i = 0;
-
-// Cache container positions
-var company_to_round_bottom = {};
-var company_to_lead_bottom = {};
-var company_to_filter_bottom = {};
+var selected_categories = [];
+var filters = new Set();
+var prev_months = 48;
 
 import {
     company_to_categories,
-    company_to_round_investors,
-    find_co_investors_before_date,
+    company_to_investors,
+    investor_to_companies,
     find_co_investors_for_multiple_investors,
-    generate_round_leads,
     initialize_investments,
-    investor_to_categories,
+    all_categories,
 } from "../generate_investment_graph.js";
 /*  
     investor_graph: {
@@ -63,40 +55,28 @@ import {
 d3.csv("/data/bulk_export/investments.csv").then(function (investments_data) {
     d3.csv("/data/bulk_export/funding_rounds.csv").then(function (funding_rounds_data) {
         d3.csv("/data/bulk_export/organizations_cleaned.csv").then(function (organizations_data) {
-            console.log("loading...");
-            initialize_investments(investments_data, funding_rounds_data, organizations_data);
-            console.log("Finished loading");
-            intialize();
+            d3.csv("/data/bulk_export/investors.csv").then(function (investors_data) {
+                console.log("loading...");
+                initialize_investments(investments_data, funding_rounds_data, organizations_data, investors_data);
+                console.log("Finished loading");
+                intialize();
+            });
         });
     });
 });
 
 function intialize() {
-    const companies = Object.keys(company_to_categories).sort();
+    const companies = Object.keys(company_to_investors).sort();
+    // const companies = ["OneThree BioTech"];
     d3.select("#company-search").on("input", function () {
-        d3.select("#round-container").style("visibility", "hidden");
-        d3.select("#lead-container").style("visibility", "hidden");
-        d3.select("#filter-container").style("visibility", "hidden");
-        d3.select("#actual-investors-container").style("visibility", "hidden");
-        d3.select("#investors-container").style("visibility", "hidden");
+        d3.select("#not-company-search").style("visibility", "hidden");
         const company_prefix = this.value;
-        var search_results = [];
-        if (company_prefix.length > 0) {
-            const MAX_SEARCH_RESULTS = 100;
-            for (var i = 0; i < companies.length; i++) {
-                const curr_company = companies[i];
-                if (curr_company.toLowerCase().startsWith(company_prefix.toLowerCase())) {
-                    search_results.push(curr_company);
-                    if (search_results.length > MAX_SEARCH_RESULTS) {
-                        break;
-                    }
-                }
-            }
-        }
+        var search_results = searchResults(company_prefix, companies);
         d3.select("#company-selector")
             .selectAll("tr")
             .data(search_results)
             .join("tr")
+            .classed("dropdown", true)
             .attr("id", "company-tr")
             .text(function (company) {
                 return company;
@@ -104,9 +84,13 @@ function intialize() {
             .on("click", function (e, company) {
                 // Set clicked company and clear results
                 search_results = [];
+                d3.select(".center").classed("center", false);
+                d3.select("#not-company-search").style("visibility", "visible");
                 d3.select("#company-search").property("value", company);
                 d3.select("#company-selector").selectAll("tr").data(search_results).join("tr");
-                loadFundingRounds(company);
+                loadInvestorSelector(company);
+                loadCategorySelector(company);
+                loadInvestorRecs();
             });
     });
 
@@ -118,249 +102,212 @@ function intialize() {
     d3.select("svg").call(zoom);
 }
 
-function loadFundingRounds(company) {
-    const company_to_leads = generate_round_leads(company);
-    const rounds = Object.keys(company_to_leads).sort();
-    d3.select("#company-industry").text(company + " Industries:");
-    d3.select("#industries")
-        .selectAll("li")
-        .data(Array.from(company_to_categories[company]))
-        .join("li")
-        .text(function (industry) {
-            return industry;
-        });
-    d3.select("#round-container").style("visibility", "visible");
-    d3.select("#round-selector")
-        .selectAll("tr")
-        .data(rounds)
-        .join("tr")
-        .attr("id", "round-tr")
-        .text(function (round) {
-            return round;
-        })
-        .on("click", function (e, round) {
-            // Clear selected investors
-            selected_investors = [];
-            // Highlight Selected
-            d3.select("#round-selector").selectAll("tr").style("background-color", "white");
-            d3.select(this).style("background-color", "lightgray");
-            loadLeadSearch(round, company_to_leads[round], company);
-        });
-}
-
-function loadLeadSearch(round, suggested_lead, company) {
-    // Dynamically set lead search top attribute
-    if (!(company in company_to_round_bottom)) {
-        company_to_round_bottom[company] =
-            d3.select("#round-container").node().getBoundingClientRect().bottom + window.scrollY;
-    }
-    const round_bottom = company_to_round_bottom[company];
-    d3.select("#lead-container")
-        .style("visibility", "visible")
-        .style("top", round_bottom + 30 + "px");
-    d3.select("#lead-search").property("value", "");
-    // Hide everything below Leads
-    d3.select("#filter-container").style("visibility", "hidden");
-    d3.select("#actual-investors-container").style("visibility", "hidden");
-    d3.select("#investors-container").style("visibility", "hidden");
-    var search_results = [];
-    if (suggested_lead) {
-        search_results = [suggested_lead + " (Suggested Lead)"];
-    }
-    populateLeadSelector(suggested_lead, search_results, round, company);
-    d3.select("#lead-search").on("click", function () {
-        search_results = [];
-        if (suggested_lead) {
-            search_results = [suggested_lead + " (Suggested Lead)"];
-        }
-        populateLeadSelector(suggested_lead, search_results, round, company);
-        // Hide everything below Leads
-        d3.select("#filter-container").style("visibility", "hidden");
-        d3.select("#actual-investors-container").style("visibility", "hidden");
-        d3.select("#investors-container").style("visibility", "hidden");
-    });
-    const leads = Object.keys(investor_to_categories).sort();
-    d3.select("#lead-search").on("input", function () {
-        const lead_prefix = this.value;
-        search_results = [];
-        if (suggested_lead) {
-            search_results = [suggested_lead + " (Suggested Lead)"];
-        }
-        if (lead_prefix.length > 0) {
-            const MAX_SEARCH_RESULTS = 100;
-            for (var i = 0; i < leads.length; i++) {
-                const curr_lead = leads[i];
-                if (curr_lead.toLowerCase().startsWith(lead_prefix.toLowerCase())) {
-                    search_results.push(curr_lead);
-                    if (search_results.length > MAX_SEARCH_RESULTS) {
-                        break;
-                    }
-                }
-            }
-        }
-        populateLeadSelector(suggested_lead, search_results, round, company);
-    });
-}
-
-function populateLeadSelector(suggested_lead, search_results, round, company) {
-    d3.select("#lead-selector")
-        .selectAll("tr")
-        .data(search_results)
-        .join("tr")
-        .attr("id", "lead-tr")
-        .text(function (lead) {
-            return lead;
-        })
-        .on("click", function (e, lead) {
-            // Clear search results
-            d3.select("#lead-search").property("value", "");
-            d3.select("#lead-selector").selectAll("tr").data([]).join("tr");
-            if (suggested_lead && lead.includes(" (Suggested Lead)")) {
-                lead = suggested_lead;
-            }
-            // Populate investor selector table
-            if (!selected_investors.includes(lead)) {
-                selected_investors.push(lead);
-            }
-            populateSelectedInvestors(selected_investors, round, company);
-        });
-}
-
-function populateSelectedInvestors(selected_investors, round, company) {
-    // Populate selected investors
-    d3.select("#selected-investors")
-        .selectAll("tr")
-        .data(selected_investors)
-        .join("tr")
-        .text(function (selected_investor) {
-            return selected_investor;
-        })
-        .on("click", function (e, investor) {
-            if (selected_investors.length > 1) {
-                const index = selected_investors.indexOf(investor);
-                selected_investors.splice(index, 1);
-                d3.select("#selected-investors")
-                    .selectAll("tr")
-                    .data(selected_investors)
-                    .join("tr")
-                    .text(function (selected_investor) {
-                        return selected_investor;
-                    });
-                loadInvestorRecs(round, selected_investors, company);
-            }
-        });
-    loadInvestorRecs(round, selected_investors, company);
-}
-
-function loadInvestorRecs(round, selected_investors, company) {
-    // const response = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
-    const response = find_co_investors_for_multiple_investors(
-        selected_investors,
-        company,
-        round,
-        filter_cousins,
-        filter_investors
-    );
-    investor_graph = response.co_investors;
-    // Load actual investors in round
-    d3.select("#company-round").text(company + " Investors on " + round + ":");
-    actual_investors = company_to_round_investors[company][round];
-    loadActualInvestors(actual_investors, selected_investors, round, company);
-    arrangeLayout(response, company);
-    generateLeadGraph(selected_investors, investor_graph);
-    // Update graph when category filter checkboxes modified
-    d3.selectAll(".filter_category").on("input", function () {
-        const type = this.value;
-        const checked = d3.select(this).property("checked");
-        if (type == "filter_cousins") {
-            filter_cousins = checked;
-        } else {
-            filter_investors = checked;
-        }
-        // const response = find_co_investors_before_date(lead, company, round, filter_cousins, filter_investors);
-        const response = find_co_investors_for_multiple_investors(
-            selected_investors,
-            company,
-            round,
-            filter_cousins,
-            filter_investors
-        );
-        investor_graph = response.co_investors;
-        loadActualInvestors(actual_investors, selected_investors, round, company);
-        generateLeadGraph(selected_investors, investor_graph);
-    });
-    // Update graph when slider is modified
-    d3.select("#investors-shown").on("input", function () {
-        generateLeadGraph(selected_investors, investor_graph);
-    });
-}
-
-function loadActualInvestors(actual_investors, selected_investors, round, company) {
-    const investor_recs = new Set(investor_graph.map((obj) => obj.investor));
-    d3.select("#actual-investors")
-        .selectAll("li")
-        .data(actual_investors)
-        .join("li")
-        .text(function (investor) {
-            return investor;
-        })
-        .style("color", function (investor) {
-            if (selected_investors.includes(investor)) {
-                return "green";
-            } else {
-                if (investor_recs.has(investor)) {
-                    return "green";
-                }
-            }
-        })
-        .on("click", function (e, investor) {
-            // Populate investor selector table
-            if (!selected_investors.includes(investor)) {
-                selected_investors.push(investor);
-                populateSelectedInvestors(selected_investors, round, company);
-            }
-        });
-}
-
-function arrangeLayout(response, company) {
-    // Move container to left
-    d3.selectAll(".center").classed("center", false);
-    // Compute height for checkbox and unhide
-    if (!(company in company_to_lead_bottom)) {
-        company_to_lead_bottom[company] =
-            d3.select("#lead-container").node().getBoundingClientRect().bottom + window.scrollY;
-    }
-    const lead_bottom = company_to_lead_bottom[company];
-    d3.select("#filter-container")
-        .style("visibility", "visible")
-        .style("top", lead_bottom + 30 + "px");
-    // Set filtered numbers
-    d3.select("#filter_title").text("Matching Industry Filter (" + response.no_filter.size + ")");
-    d3.select("#filter_cousins").text(" Filter Cousins (" + response.filtered_cousins.size + ")");
-    d3.select("#filter_investors").text(" Filter Investors (" + response.filtered_investors.size + ")");
-    // Display actual investors in round
-    if (!(company in company_to_filter_bottom)) {
-        company_to_filter_bottom[company] =
-            d3.select("#filter-container").node().getBoundingClientRect().bottom + window.scrollY;
-    }
-    const filter_bottom = company_to_filter_bottom[company];
-    d3.select("#actual-investors-container")
-        .style("visibility", "visible")
-        .style("top", filter_bottom + "px");
-    // Compute height for selected investors container
-    const actual_investors_bottom =
-        d3.select("#actual-investors-container").node().getBoundingClientRect().bottom + window.scrollY;
-    d3.select("#investors-container")
-        .style("visibility", "visible")
-        .style("top", actual_investors_bottom + "px");
+function computeSVGBounds() {
     // Compute size and position of svg
-    const container_right = d3.select(".container").node().getBoundingClientRect().right;
+    const container_right = d3.select("#bounding-container").node().getBoundingClientRect().right;
     width = window.innerWidth - container_right;
     height = window.innerHeight;
     d3.select("svg")
         .attr("width", width - 30)
         .attr("height", height - 30)
         .style("left", container_right + 30 + "px");
+}
+
+function searchResults(prefix, search_array) {
+    var search_results = [];
+    if (prefix.length > 0) {
+        const MAX_SEARCH_RESULTS = 100;
+        for (var i = 0; i < search_array.length; i++) {
+            const curr_elem = search_array[i];
+            if (curr_elem.toLowerCase().startsWith(prefix.toLowerCase())) {
+                search_results.push(curr_elem);
+                if (search_results.length > MAX_SEARCH_RESULTS) {
+                    break;
+                }
+            }
+        }
+    }
+    return search_results;
+}
+
+function loadTableData(id, data, css_class) {
+    return d3
+        .select("#" + id)
+        .selectAll("tr")
+        .data(data)
+        .join("tr")
+        .classed(css_class, true)
+        .attr("id", id + "-tr")
+        .text(function (element) {
+            return element;
+        });
+}
+
+// ######### Investor Selector #########
+function loadSelectedInvestorsTable() {
+    loadTableData("selected-investors", selected_investors, "selections").on("click", function (e, investor_to_remove) {
+        selected_investors = selected_investors.filter(function (value) {
+            return value != investor_to_remove;
+        });
+        loadInvestorRecs();
+        loadTableData("selected-investors", selected_investors, "selections");
+    });
+}
+
+function loadInvestorSelector(company) {
+    selected_investors = Array.from(company_to_investors[company]);
+    const investors = Object.keys(investor_to_companies).sort();
+    // Populate investors
+    loadSelectedInvestorsTable();
+
+    // Search investors
+    d3.select("#investors-search").on("input", function () {
+        const investor_prefix = this.value;
+        if (investor_prefix == "") {
+            search_results = [];
+            d3.select("#selected-investors").style("display", null);
+            d3.select("#investors-selector").selectAll("tr").data(search_results).join("tr");
+        } else {
+            // Hide selected results
+            d3.select("#selected-investors").style("display", "none");
+            var search_results = searchResults(investor_prefix, investors);
+            loadTableData("investors-selector", search_results, "dropdown").on("click", function (e, investor) {
+                // Set clicked company and clear results
+                search_results = [];
+                d3.select("#selected-investors").style("display", null);
+                d3.select("#investors-search").property("value", "");
+                d3.select("#investors-selector").selectAll("tr").data(search_results).join("tr");
+                // Append to selected-investors
+                if (!selected_investors.includes(investor)) {
+                    selected_investors.push(investor);
+                    loadInvestorRecs();
+                }
+                loadSelectedInvestorsTable();
+            });
+        }
+    });
+}
+
+// ######### Category Selector #########
+function loadSelectedCategoryTable() {
+    loadTableData("selected-categories", selected_categories, "selections").on(
+        "click",
+        function (e, category_to_remove) {
+            selected_categories = selected_categories.filter(function (value) {
+                return value != category_to_remove;
+            });
+            loadInvestorRecs();
+            loadTableData("selected-categories", selected_categories, "selections");
+        }
+    );
+}
+
+function loadCategorySelector(company) {
+    selected_categories = company_to_categories[company];
+    const categories = Array.from(all_categories).sort();
+    // Populate categories
+    loadSelectedCategoryTable();
+
+    // Search categories
+    d3.select("#categories-search").on("input", function () {
+        const category_prefix = this.value;
+        if (category_prefix == "") {
+            search_results = [];
+            d3.select("#selected-categories").style("display", null);
+            d3.select("#categories-selector").selectAll("tr").data(search_results).join("tr");
+        } else {
+            // Hide selected results
+            d3.select("#selected-categories").style("display", "none");
+            var search_results = searchResults(category_prefix, categories);
+            loadTableData("categories-selector", search_results, "dropdown").on("click", function (e, category) {
+                // Set clicked company and clear results
+                search_results = [];
+                d3.select("#selected-categories").style("display", null);
+                d3.select("#categories-search").property("value", "");
+                d3.select("#categories-selector").selectAll("tr").data(search_results).join("tr");
+                // Append to selected-categories
+                if (!selected_categories.includes(category)) {
+                    selected_categories.push(category);
+                    loadInvestorRecs();
+                }
+                loadSelectedCategoryTable();
+            });
+        }
+    });
+}
+
+function loadInvestorRecs() {
+    const response = find_co_investors_for_multiple_investors(
+        selected_investors,
+        selected_categories,
+        prev_months,
+        filter_cousins,
+        filter_investors,
+        filters
+    );
+    investor_graph = response.co_investors;
+    setCategoryFilterCounts(response);
+    generateLeadGraph(investor_graph);
+    initializeFilters();
+    // Update graph when num investors is modified
+    d3.select("#investors-shown").on("input", function () {
+        generateLeadGraph(investor_graph);
+    });
+    // Update graph when prev months is modified
+    d3.select("#prev-months").on("input", function () {
+        prev_months = d3.select("#prev-months").property("value");
+        if (prev_months == "" || prev_months < 0) {
+            prev_months = 0;
+        }
+        const response = find_co_investors_for_multiple_investors(
+            selected_investors,
+            selected_categories,
+            prev_months,
+            filter_cousins,
+            filter_investors,
+            filters
+        );
+        setCategoryFilterCounts(response);
+        investor_graph = response.co_investors;
+        generateLeadGraph(investor_graph);
+    });
+}
+
+function setCategoryFilterCounts(response) {
+    // Set filtered numbers
+    d3.select("#category-title").text("Matching Industry Filter (" + response.no_filter.size + ")");
+    d3.select("#filter_cousins").text(" Filter Cousins (" + response.filtered_cousins.size + ")");
+    d3.select("#filter_investors").text(" Filter Investors (" + response.filtered_investors.size + ")");
+}
+
+function initializeFilters() {
+    // Update graph when category filter checkboxes modified
+    d3.selectAll(".filter_investor").on("input", function () {
+        const type = this.value;
+        const checked = d3.select(this).property("checked");
+        if (type == "filter_cousins") {
+            filter_cousins = checked;
+        } else if (type == "filter_investors") {
+            filter_investors = checked;
+        } else {
+            if (checked) {
+                filters.add(type);
+            } else {
+                filters.delete(type);
+            }
+        }
+        const response = find_co_investors_for_multiple_investors(
+            selected_investors,
+            selected_categories,
+            prev_months,
+            filter_cousins,
+            filter_investors,
+            filters
+        );
+        setCategoryFilterCounts(response);
+        investor_graph = response.co_investors;
+        generateLeadGraph(investor_graph);
+    });
 }
 
 function computeLeadPos(i) {
@@ -374,7 +321,8 @@ function computeLeadPos(i) {
     return [x_pos, y_pos];
 }
 
-function generateLeadGraph(selected_investors, investor_graph_input) {
+function generateLeadGraph(investor_graph_input) {
+    computeSVGBounds();
     is_cousin_graph = false;
     nodes = [];
     const lead_name_to_index = {};
@@ -643,26 +591,18 @@ function runSimulation(isLeadGraph) {
         .attr("fill", function (node) {
             if (node.type == "lead") return lead_main;
             else if (node.type == "investor") {
-                if (actual_investors.has(node.name)) {
-                    return investor_match_main;
-                } else {
-                    return investor_no_match_main;
-                }
+                return investor_no_match_main;
             } else return cousin_main;
         })
         .attr("stroke", function (node) {
             if (node.type == "lead") return lead_outline;
             else if (node.type == "investor") {
-                if (actual_investors.has(node.name)) {
-                    return investor_match_outline;
-                } else {
-                    return investor_no_match_outline;
-                }
+                return investor_no_match_outline;
             } else return cousin_outline;
         })
         .on("click", function (e, node) {
             if (node.type == "lead") {
-                generateLeadGraph(selected_investors, investor_graph);
+                generateLeadGraph(investor_graph);
             } else if (node.type == "investor") {
                 // TODO: Make lookup of investors faster than iteration through whole list
                 const lead_investors = investor_graph;
@@ -766,7 +706,7 @@ function runSimulation(isLeadGraph) {
             .text(function (d) {
                 var count = d.count;
                 if (d.is_hover) {
-                    count = Math.max(hover_count + 2, count);
+                    count = Math.max(hover_count + 8, count);
                 }
                 let sub_length = 5 + 1 * (count - 1);
                 const str_length = d.name.length;

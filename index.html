@@ -1,38 +1,54 @@
 <!DOCTYPE html>
 <html>
     <body>
-        <div class="container center" id="company-container">
-            <input id="company-search" type="text" placeholder="Select your company">
-            <table id="company-selector"></table>
-        </div>
-        <div class="container center" id="round-container" style="visibility: hidden">
-            <p>Select a round</p>
-            <table id="round-selector"></table>
-        </div>
-        <div class="container center" id="lead-container" style="visibility: hidden">
-            <input id="lead-search" type="text" placeholder="Select existing Investors">
-            <table id="lead-selector"></table>
-        </div>
-        <div class="container center" id="filter-container" style="visibility: hidden">
-            <p id="filter_title">Matching Industry Filter</p>
-            <div id="checkbox-container">
-                <input type="checkbox" class="filter_category" value="filter_cousins">
-                <label id="filter_cousins" for="filter_cousins"> Filter Cousins</label><br>
-                <input type="checkbox" class="filter_category" value="filter_investors">
-                <label id="filter_investors" for="filter_investors"> Filter Investors</label><br>
+        <div id="bounding-container" class="center">
+            <div class="container" id="company-container">
+                <input id="company-search" type="text" placeholder="Select your company" />
+                <div class="selected-results">
+                    <table id="company-selector"></table>
+                </div>
             </div>
-            <p id="investors-shown-label">Number of Investors Shown</p>
-            <input type="number" id="investors-shown" step="1" value="10">
-            <p id="company-industry"></p>
-            <ul id="industries"></ul>
-        </div>
-        <div class="container center" id="actual-investors-container" style="visibility: hidden">
-            <p id="company-round"></p>
-            <ul id="actual-investors"></ul>
-        </div>
-        <div class="container center" id="investors-container" style="visibility: hidden">
-            <p>Selected Investors (Click to Remove)</p>
-            <table id="selected-investors"></table>
+            <div id="not-company-search" style="visibility: hidden">
+                <div class="container search-selection" id="investors-container">
+                    <input id="investors-search" type="text" placeholder="Select existing Investors" />
+                    <div class="selected-results">
+                        <table id="investors-selector"></table>
+                        <table id="selected-investors"></table>
+                    </div>
+                </div>
+                <div class="container search-selection" id="category-container">
+                    <input id="categories-search" type="text" placeholder="Select Categories" />
+                    <div class="selected-results">
+                        <table id="categories-selector"></table>
+                        <table id="selected-categories"></table>
+                    </div>
+                </div>
+                <div class="container" id="category-filter-container">
+                    <p id="category-title" class="filter-title">Matching Industry Filter</p>
+                    <div id="checkbox-container">
+                        <input type="checkbox" class="filter_investor" value="filter_cousins" />
+                        <label id="filter_cousins" for="filter_cousins"> Filter Cousins</label><br />
+                        <input type="checkbox" class="filter_investor" value="filter_investors" />
+                        <label id="filter_investors" for="filter_investors"> Filter Investors</label><br />
+                    </div>
+                </div>
+                <div class="container" id="input-filter-container">
+                    <p id="num-shown-title" class="filter-title">Investor Age</p>
+                    <input type="number" id="investors-shown" step="1" value="10" />
+                    <label id="num-investors-shown" for="investors-shown">Number Shown</label><br />
+                    <input type="number" id="prev-months" step="1" value="24" />
+                    <label id="num-prev-months" for="prev-months">Months to Consider</label><br />
+                </div>
+                <div class="container" id="type-filter-container">
+                    <p id="type-title" class="filter-title">Investor Type</p>
+                    <div id="checkbox-container">
+                        <input type="checkbox" class="filter_investor" value="person" />
+                        <label id="filter_person" for="filter_person">Person</label><br />
+                        <input type="checkbox" class="filter_investor" value="organization" />
+                        <label id="filter_organization" for="filter_organization">Organization</label><br />
+                    </div>
+                </div>
+            </div>
         </div>
         <svg>
             <g class="links"></g>
@@ -41,6 +57,7 @@
         </svg>
         <script src="https://d3js.org/d3.v7.min.js"></script>
         <link rel="stylesheet" href="example_gen/style.css" />
+        <link href="https://fonts.cdnfonts.com/css/uber-move-text" rel="stylesheet" />
         <script type="module" src="example_gen/example_gen.js"></script>
     </body>
 </html>

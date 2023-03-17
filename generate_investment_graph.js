@@ -14,21 +14,21 @@ let funding_uuid_to_round_date = {};
 // d950d7a5-79ff-fb93-ca87-13386b0e2feb: Meta
 let company_uuid_to_org_name = {};
 
-// company uuid -> categories
-// d950d7a5-79ff-fb93-ca87-13386b0e2feb: [category_a, category_b]
-let company_uuid_to_categories = {};
-
 // investor -> list of round_dates along with companies invested in at each of those dates (possibility of investing in two rounds on same day)
 // investor_a: { 2008-03-19: [company_a, company_b], 2010-4-20: [company_c] }
 let investor_to_rounds = {};
 
 // company -> all investors
 // company_a: [investor_a, investor_b]
-let company_to_investors = {};
+export let company_to_investors = {};
 
 // investor -> all companies
 // investor_a: [company_a, company_b]
-let investor_to_companies = {};
+export let investor_to_companies = {};
+
+// investor -> type
+// investor_a: person / organization
+let investor_to_type = {};
 
 // company -> company categories
 // company_a: [category_a, category_b]
@@ -38,7 +38,15 @@ export let company_to_categories = {};
 // company_a: [category_a, category_b]
 export let investor_to_categories = {};
 
-export function initialize_investments(investments_data, funding_rounds_data, organizations_data) {
+export let all_categories = new Set();
+
+// Maps filter values to their objects
+const filter_to_objects = {
+    person: investor_to_type,
+    organization: investor_to_type,
+};
+
+export function initialize_investments(investments_data, funding_rounds_data, organizations_data, investors_data) {
     /*
     if the files for company_to_categories already exists, pull from that
     if investor_to_categories exists, pull from that
@@ -55,10 +63,15 @@ export function initialize_investments(investments_data, funding_rounds_data, or
         const org_uuid = organizations_data[i].uuid;
         if (org_uuid in company_uuid_to_org_name) {
             const company = company_uuid_to_org_name[org_uuid];
-            company_to_categories[company] = new Set(
-                organizations_data[i].category_groups_list.split(",").filter((c) => c != "")
-            );
+            const category_list = organizations_data[i].category_groups_list.split(",").filter((c) => c != "");
+            company_to_categories[company] = category_list;
+            category_list.forEach((category) => all_categories.add(category));
         }
+    }
+    for (var i = 0; i < investors_data.length; i++) {
+        const name = investors_data[i].name;
+        const type = investors_data[i].type;
+        investor_to_type[name] = type;
     }
     for (var i = 0; i < investments_data.length; i++) {
         const fr_uuid = investments_data[i].funding_round_uuid;
@@ -96,183 +109,7 @@ export function initialize_investments(investments_data, funding_rounds_data, or
     */
 }
 
-/*  
-    Generate Local graph for every company / round
-    local_graphs: {
-        company_a: {
-            2008-03-19: {
-                lead_investor: investor_a,
-                portfolio_cousins_investors: {
-                    portfolio_cousin_1: set([ investor_b, investor_c, ... ]),
-                    portfolio_cousin_2: set([ investor_d, investor_e, ... ])
-                }
-            },
-            2010-05-11: {...},
-            ...
-        },
-        company_b: {...}
-    }
-*/
-export function generate_local_graphs() {
-    let local_graphs = {};
-    var i = 0.0;
-    var n = Object.keys(company_to_round_investors).length;
-    for (const company in company_to_round_investors) {
-        for (const round_date in company_to_round_investors[company]) {
-            const round_investors = company_to_round_investors[company][round_date];
-
-            // Choose a 'lead' investor by selecting the one with the max investments
-            var max_investments = 0;
-            var lead_investor = "";
-            round_investors.forEach(function (round_investor) {
-                var num_investments = investor_to_companies[round_investor].size;
-                if (num_investments > max_investments) {
-                    lead_investor = round_investor;
-                    max_investments = num_investments;
-                }
-            });
-
-            // Gather portfolio cousins of lead investor
-            let portfolio_cousins = new Set(investor_to_companies[lead_investor]);
-
-            // Remove company from portfolio cousins
-            portfolio_cousins.delete(company);
-
-            // Grab first 10 investors for each portfolio cousin, remove lead investor if necessary
-            let portfolio_cousins_investors = {};
-            const max_investors = 10;
-            var num_investors = 0;
-            portfolio_cousins.forEach(function (portfolio_cousin) {
-                let investors_sample = Array.from(company_to_investors[portfolio_cousin])
-                    .slice(0, max_investors)
-                    .filter(function (investor) {
-                        return investor != lead_investor;
-                    });
-                if (investors_sample.length > 0) portfolio_cousins_investors[portfolio_cousin] = investors_sample;
-                num_investors += investors_sample.length;
-            });
-
-            if (num_investors == 0) {
-                continue;
-            }
-
-            if (!(company in local_graphs)) {
-                local_graphs[company] = {};
-            }
-            local_graphs[company][round_date] = {
-                lead_investor,
-                portfolio_cousins_investors,
-            };
-        }
-        if (i == 10000) break;
-        i += 1;
-    }
-    return local_graphs;
-}
-
-/*
-    Generate entire investor graph
-    investors sorted by most to least num_co_investments
-    investor_graph: {
-        investor_a: [
-            0: {
-                investor: investor_dest,
-                num_co_investments: n,
-                portfolio_cousins: Set([portfolio_cousin_1, portfolio_cousin_2, ...])
-            },
-            1: {...}
-        ],
-        investor_b: {...}
-    }
-*/
-export function generate_investor_graph() {
-    let investor_graph_temp = {};
-    for (const company in company_to_round_investors) {
-        for (const round_date in company_to_round_investors[company]) {
-            const round_investors = company_to_round_investors[company][round_date];
-            if (round_investors.size == 1) {
-                continue;
-            }
-            round_investors.forEach(function (round_investor_source) {
-                if (!(round_investor_source in investor_graph_temp)) {
-                    investor_graph_temp[round_investor_source] = {};
-                }
-                round_investors.forEach(function (round_investor_dest) {
-                    if (round_investor_source != round_investor_dest) {
-                        if (!(round_investor_dest in investor_graph_temp[round_investor_source])) {
-                            investor_graph_temp[round_investor_source][round_investor_dest] = {
-                                num_co_investments: 0,
-                                portfolio_cousins: new Set(),
-                            };
-                        }
-                        investor_graph_temp[round_investor_source][round_investor_dest].portfolio_cousins.add(company);
-                        investor_graph_temp[round_investor_source][round_investor_dest].num_co_investments =
-                            investor_graph_temp[round_investor_source][round_investor_dest].portfolio_cousins.size;
-                    }
-                });
-            });
-        }
-    }
-
-    let investor_graph = {};
-    // Sort by # co-invested rounds
-    for (const investor_source in investor_graph_temp) {
-        const related_investors_dict = investor_graph_temp[investor_source];
-        const related_investors = Object.keys(related_investors_dict).map(function (investor_dest) {
-            return {
-                investor: investor_dest,
-                ...related_investors_dict[investor_dest],
-            };
-        });
-        related_investors.sort(function (first, second) {
-            return second.num_co_investments - first.num_co_investments;
-        });
-        investor_graph[investor_source] = related_investors;
-    }
-
-    return investor_graph;
-}
-
-/*
-    Compute lead investor for each company, round by looking at which investor has the most co-investments prior to that round
-    round_leads: {
-        company_a: {
-            2008-03-19: investor_a
-            2010-05-11: investor_b,
-            ...
-        },
-        company_b: {...}
-    }
-*/
-export function generate_round_leads(company) {
-    // company: {2008-03-19: investor_a, 2010-4-20: investor_b}
-    let company_to_leads = {};
-    const rounds = Object.keys(company_to_round_investors[company]);
-    for (var j = 0; j < rounds.length; j++) {
-        const round_date = rounds[j];
-        const investors = company_to_round_investors[company][round_date];
-        var lead_investor;
-        var max_investments = -1;
-        investors.forEach((investor) => {
-            // Compute num investments up until round_date
-            const investor_round_dates = Object.keys(investor_to_rounds[investor]);
-            var num_investments = 0;
-            for (var k = 0; k < investor_round_dates.length; k++) {
-                const investor_round_date = investor_round_dates[k];
-                if (investor_round_date < round_date) {
-                    num_investments += investor_to_rounds[investor][investor_round_date].size;
-                }
-            }
-            if (num_investments > max_investments) {
-                max_investments = num_investments;
-                lead_investor = investor;
-            }
-        });
-        company_to_leads[round_date] = lead_investor;
-    }
-    return company_to_leads;
-}
-
+// Helper functions
 function has_overlapping_categories(categories_a, categories_b) {
     var has_overlap = false;
     if (categories_a && categories_b) {
@@ -283,6 +120,24 @@ function has_overlapping_categories(categories_a, categories_b) {
         });
     }
     return has_overlap;
+}
+
+function apply_filters(filters, investors) {
+    if (filters.size > 0) {
+        const filtered_investors = new Set();
+        filters.forEach((checked_value) => {
+            const filter_object = filter_to_objects[checked_value];
+            investors.forEach((investor) => {
+                const actual_value = filter_object[investor];
+                if (actual_value == checked_value) {
+                    filtered_investors.add(investor);
+                }
+            });
+        });
+        return filtered_investors;
+    } else {
+        return investors;
+    }
 }
 
 /*
@@ -300,10 +155,17 @@ function has_overlapping_categories(categories_a, categories_b) {
         {...}
     ]
 */
-export function find_co_investors_before_date(lead, company, company_round_date, filter_cousins, filter_investors) {
-    // Find rounds lead has invested in prior to company_round_date
+export function find_co_investors_before_date(
+    lead,
+    selected_categories,
+    after_date,
+    filter_cousins,
+    filter_investors,
+    filters
+) {
+    // Find rounds lead has invested in after after_date
     const lead_rounds = investor_to_rounds[lead];
-    const round_dates = Object.keys(lead_rounds).filter((round) => round < company_round_date);
+    const round_dates = Object.keys(lead_rounds).filter((round) => round >= after_date);
 
     // Keep track of all co_investors in three scenarios
     var co_investors_no_filter = new Set();
@@ -317,19 +179,21 @@ export function find_co_investors_before_date(lead, company, company_round_date,
         const cousins = lead_rounds[round_date];
         cousins.forEach((cousin) => {
             const has_overlapping_categories_cousins = has_overlapping_categories(
-                company_to_categories[company],
-                company_to_categories[cousin]
+                new Set(selected_categories),
+                new Set(company_to_categories[cousin])
             );
             // Get all investors who co-invested with lead in cousin, round_date and remove lead
             let cousin_investors = new Set(company_to_round_investors[cousin][round_date]);
             cousin_investors.delete(lead);
+            // Apply all other non-category filters
+            cousin_investors = apply_filters(filters, cousin_investors);
             co_investors_no_filter = new Set([...co_investors_no_filter, ...cousin_investors]);
             if (has_overlapping_categories_cousins) {
                 co_investors_cousin_filter = new Set([...co_investors_cousin_filter, ...cousin_investors]);
             }
             cousin_investors.forEach((cousin_investor) => {
                 const has_overlapping_categories_investors = has_overlapping_categories(
-                    company_to_categories[company],
+                    new Set(selected_categories),
                     investor_to_categories[cousin_investor]
                 );
                 if (has_overlapping_categories_investors) {
@@ -369,6 +233,13 @@ export function find_co_investors_before_date(lead, company, company_round_date,
     };
 }
 
+function dateToYMD(date) {
+    var d = date.getDate();
+    var m = date.getMonth() + 1;
+    var y = date.getFullYear();
+    return "" + y + "-" + (m <= 9 ? "0" + m : m) + "-" + (d <= 9 ? "0" + d : d);
+}
+
 /*
     Returns all investors that co-invested with any input up to the provided round_date
 
@@ -393,25 +264,32 @@ export function find_co_investors_before_date(lead, company, company_round_date,
 */
 export function find_co_investors_for_multiple_investors(
     input_investors,
-    company,
-    company_round_date,
+    selected_categories,
+    prev_months,
     filter_cousins,
-    filter_investors
+    filter_investors,
+    filters
 ) {
     // Keep track of all co_investors in three scenarios
     var co_investors_no_filter = new Set();
     var co_investors_cousin_filter = new Set();
     var co_investors_investor_filter = new Set();
 
+    // Compute date from prev_months
+    var d = new Date();
+    d.setMonth(d.getMonth() - prev_months);
+    const after_date = dateToYMD(d);
+
     let co_investors_temp = {};
     for (var i = 0; i < input_investors.length; i++) {
         const input_investor = input_investors[i];
         const single_input_co_investors = find_co_investors_before_date(
             input_investor,
-            company,
-            company_round_date,
+            selected_categories,
+            after_date,
             filter_cousins,
-            filter_investors
+            filter_investors,
+            filters
         );
         for (var j = 0; j < single_input_co_investors.co_investors.length; j++) {
             const single_co_investor = single_input_co_investors.co_investors[j];

@@ -1,112 +1,83 @@
-.container {
+#bounding-container {
     position: absolute;
-    width: 400px;
+    padding-bottom: 10px;
+}
+.container {
+    width: 250px;
+    box-shadow: 0px 0px 3px grey;
+    font: 15px "Uber Move Text", sans-serif;
+    padding: 10px;
+    border-radius: 10px;
+    margin-top: 15px;
 }
 .center {
+    position: absolute;
     left: 50%;
     transform: translate(-50%);
 }
-
-.container p {
-    margin: 0px;
-    font: 20px Arial;
+.search-selection {
+    height: 150px;
+}
+.selected-results {
+    overflow-y: scroll;
+    max-height: 125px;
 }
 
 #company-container {
     top: 50px;
+    padding: 10px;
+    border-radius: 10px;
 }
-#round-container {
-    top: 120px;
+
+.filter-title {
+    margin: 0px;
+    margin-bottom: 10px;
+    font-weight: bold;
 }
-#filter-container {
-    font: 20px Arial;
-}
-#filter-container label {
-    margin-right: 20px;
-}
-#checkbox-container {
-    display: flex;
-    font: 15px Arial;
-    height: 25px;
-    line-height: 25px;
-    margin-top: 5px;
-}
-#investors-shown-label {
-    margin-top: 25px;
-}
-#investors-shown {
-    width: 80px;
-    font: 20px Arial;
-    height: 30px;
-    line-height: 30px;
-}
-#company-industry {
-    margin-top: 15px;
-}
-ul {
-    font: 15px Arial;
-    padding-left: 25px;
-    margin-top: 5px;
-}
-input {
-    width: 20px;
-    height: 20px;
-}
-input[type=checkbox] {
+
+input[type="checkbox"] {
     margin-left: 0px;
 }
-input[type=text] {
-    width: 100%;
-    height: 40px;
-    padding-left: 10px;
-    font: 20px Arial;
+input[type="text"] {
+    width: 245px;
+    height: 30px;
+    border: 0px;
+    font: 15px "Uber Move Text", sans-serif;
+    outline: none;
+    border-bottom: 1px solid;
+}
+input[type="number"] {
+    width: 50px;
+    margin-right: 10px;
+    margin-bottom: 5px;
 }
 
-table {
-    border-left: 1px solid;
-    border-right: 1px solid;
-    border-bottom: 1px solid;
-    border-color: gray;
-    max-height: 500px;
-    width: 416px;
-    display: block;
-}
-#company-selector {
-    overflow-y: scroll;
-    overflow-x: hidden;
-}
-#lead-selector {
-    overflow-y: scroll;
-    overflow-x: hidden;
-}
-#round-selector {
-    border-top: 1px solid;
-}
 #selected-investors {
-    border-top: 1px solid;
+    margin-top: 10px;
 }
-#actual-investors {
-    cursor: pointer;
+#selected-categories {
+    margin-top: 10px;
 }
 
-tr {
-    font: 20px Arial;
-    height: 40px;
-    line-height: 40px;
-    border-bottom: 1px solid;
-    border-color: lightgray;
+.dropdown {
+    height: 20px;
+    width: 245px;
+    line-height: 20px;
     cursor: pointer;
-    width: 404px;
     display: block;
-    padding-left: 10px;
     background-color: white;
-    overflow:hidden;
-    white-space:nowrap;
-    text-overflow:ellipsis;
+    overflow-y: scroll;
+}
+.dropdown:hover {
+    background-color: lightgray;
 }
 
-tr:hover {
-    background-color: lightgray;
+.selections {
+    height: 20px;
+    cursor: pointer;
+}
+.selections:hover {
+    color: gray;
 }
 
 /* Graph Styling */
