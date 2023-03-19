@@ -54,11 +54,28 @@ let investor_to_round_types = {};
 const filter_to_objects = {
     person: investor_to_type,
     organization: investor_to_type,
+    angel: investor_to_round_types,
     pre_seed: investor_to_round_types,
     series_a: investor_to_round_types,
     series_b: investor_to_round_types,
     series_c: investor_to_round_types,
     series_d: investor_to_round_types,
+    series_e: investor_to_round_types,
+    series_f: investor_to_round_types,
+};
+
+// Used for grouping common filter types together
+const filter_to_filter_type = {
+    person: "investor_to_type",
+    organization: "investor_to_type",
+    angel: "investor_to_round_types",
+    pre_seed: "investor_to_round_types",
+    series_a: "investor_to_round_types",
+    series_b: "investor_to_round_types",
+    series_c: "investor_to_round_types",
+    series_d: "investor_to_round_types",
+    series_e: "investor_to_round_types",
+    series_f: "investor_to_round_types",
 };
 
 export function initialize_investments(investments_data, funding_rounds_data, organizations_data, investors_data) {
@@ -159,21 +176,47 @@ function has_overlapping_categories(categories_a, categories_b) {
 }
 
 function apply_filters(filters, investors) {
-    if (filters.size > 0) {
-        const filtered_investors = new Set();
-        filters.forEach((checked_value) => {
-            const filter_object = filter_to_objects[checked_value];
-            investors.forEach((investor) => {
-                const actual_value = filter_object[investor];
-                if (actual_value == checked_value) {
-                    filtered_investors.add(investor);
-                }
-            });
-        });
-        return filtered_investors;
-    } else {
+    if (filters.size == 0) {
         return investors;
     }
+
+    // Group filter types
+    const filter_type_to_filter = {};
+    filters.forEach((filter) => {
+        const filter_type = filter_to_filter_type[filter];
+        if (!(filter_type in filter_type_to_filter)) {
+            filter_type_to_filter[filter_type] = [];
+        }
+        filter_type_to_filter[filter_type].push(filter);
+    });
+
+    // Needs one match per selected filter type to be included
+    const filtered_investors = new Set();
+    investors.forEach((investor) => {
+        var shouldAddInvestor = true;
+        for (const filter_type in filter_type_to_filter) {
+            var didPassFilterType = false;
+            const filters_for_type = filter_type_to_filter[filter_type];
+            for (var i = 0; i < filters_for_type.length; i++) {
+                const filter_for_type = filters_for_type[i];
+                const filter_object = filter_to_objects[filter_for_type];
+                const actual_value = filter_object[investor];
+                if (actual_value == filter_for_type) {
+                    // Only needs to pass one per filter type
+                    didPassFilterType = true;
+                    break;
+                }
+            }
+            if (!didPassFilterType) {
+                shouldAddInvestor = false;
+                break;
+            }
+        }
+        if (shouldAddInvestor) {
+            filtered_investors.add(investor);
+        }
+    });
+    return filtered_investors;
 }
 
 /*
