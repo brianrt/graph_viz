@@ -10,6 +10,10 @@ let funding_uuid_to_company_name = {};
 // d950d7a5-79ff-fb93-ca87-13386b0e2feb: 2004-09-01
 let funding_uuid_to_round_date = {};
 
+// funding round uuid -> investment type
+// d950d7a5-79ff-fb93-ca87-13386b0e2feb: series_a
+let funding_uuid_to_round_type = {};
+
 // company uuid -> org_name
 // d950d7a5-79ff-fb93-ca87-13386b0e2feb: Meta
 let company_uuid_to_org_name = {};
@@ -26,10 +30,6 @@ export let company_to_investors = {};
 // investor_a: [company_a, company_b]
 export let investor_to_companies = {};
 
-// investor -> type
-// investor_a: person / organization
-let investor_to_type = {};
-
 // company -> company categories
 // company_a: [category_a, category_b]
 export let company_to_categories = {};
@@ -40,10 +40,25 @@ export let investor_to_categories = {};
 
 export let all_categories = new Set();
 
+// ##### Filter objects #####
+
+// investor -> type
+// investor_a: person / organization
+let investor_to_type = {};
+
+// investor -> round_type
+// investor_a: series_a
+let investor_to_round_types = {};
+
 // Maps filter values to their objects
 const filter_to_objects = {
     person: investor_to_type,
     organization: investor_to_type,
+    pre_seed: investor_to_round_types,
+    series_a: investor_to_round_types,
+    series_b: investor_to_round_types,
+    series_c: investor_to_round_types,
+    series_d: investor_to_round_types,
 };
 
 export function initialize_investments(investments_data, funding_rounds_data, organizations_data, investors_data) {
@@ -58,6 +73,7 @@ export function initialize_investments(investments_data, funding_rounds_data, or
         funding_uuid_to_company_name[fr_uuid] = funding_rounds_data[i].org_name;
         funding_uuid_to_round_date[fr_uuid] = funding_rounds_data[i].announced_on;
         company_uuid_to_org_name[org_uuid] = funding_rounds_data[i].org_name;
+        funding_uuid_to_round_type[fr_uuid] = funding_rounds_data[i].investment_type;
     }
     for (var i = 0; i < organizations_data.length; i++) {
         const org_uuid = organizations_data[i].uuid;
@@ -78,6 +94,7 @@ export function initialize_investments(investments_data, funding_rounds_data, or
         const company = funding_uuid_to_company_name[fr_uuid];
         const investor = investments_data[i].investor_name;
         const round_date = funding_uuid_to_round_date[fr_uuid];
+        const round_type = funding_uuid_to_round_type[fr_uuid];
         const categories = company_to_categories[company] || new Set("");
 
         if (!(company in company_to_round_investors)) {
@@ -89,20 +106,39 @@ export function initialize_investments(investments_data, funding_rounds_data, or
         }
         if (!(investor in investor_to_rounds)) {
             investor_to_rounds[investor] = {};
+            investor_to_round_types[investor] = {};
             investor_to_companies[investor] = new Set();
             investor_to_categories[investor] = new Set();
         }
         if (!(round_date in investor_to_rounds[investor])) {
             investor_to_rounds[investor][round_date] = new Set();
         }
+        if (!(round_type in investor_to_round_types[investor])) {
+            investor_to_round_types[investor][round_type] = 0;
+        }
 
         company_to_round_investors[company][round_date].add(investor);
         investor_to_rounds[investor][round_date].add(company);
         company_to_investors[company].add(investor);
         investor_to_companies[investor].add(company);
+        investor_to_round_types[investor][round_type] += 1;
         categories.forEach((category) => {
             investor_to_categories[investor].add(category);
         });
+    }
+    // Choose top round types per investor
+    for (const investor in investor_to_round_types) {
+        var max = -1;
+        var max_round = "";
+        const round_types = investor_to_round_types[investor];
+        for (const round in round_types) {
+            const count = round_types[round];
+            if (count > max) {
+                max_round = round;
+                max = count;
+            }
+        }
+        investor_to_round_types[investor] = max_round;
     }
     /*
     write company_to_categories investor_to_categories to separate files
