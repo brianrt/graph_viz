@@ -20,6 +20,7 @@
 }
 .selected-results {
     overflow-y: scroll;
+    overflow-x: hidden;
     max-height: 125px;
 }
 
