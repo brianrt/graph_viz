@@ -712,6 +712,8 @@ function runSimulation(isLeadGraph) {
                 const str_length = d.name.length;
                 if (d.type == "cousin") {
                     sub_length = 12;
+                } else if (d.type == "lead") {
+                    sub_length = 18;
                 } else if (is_cousin_graph) {
                     sub_length = str_length;
                 }
