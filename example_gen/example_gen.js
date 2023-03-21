@@ -90,6 +90,7 @@ function intialize() {
                 d3.select("#company-selector").selectAll("tr").data(search_results).join("tr");
                 loadInvestorSelector(company);
                 loadCategorySelector(company);
+                initializeFilters();
                 loadInvestorRecs();
             });
     });
@@ -248,7 +249,6 @@ function loadInvestorRecs() {
     investor_graph = response.co_investors;
     setCategoryFilterCounts(response);
     generateLeadGraph(investor_graph);
-    initializeFilters();
     // Update graph when num investors is modified
     d3.select("#investors-shown").on("input", function () {
         generateLeadGraph(investor_graph);
@@ -283,19 +283,17 @@ function setCategoryFilterCounts(response) {
 function initializeFilters() {
     // Update graph when category filter checkboxes modified
     d3.selectAll(".filter_investor").on("input", function () {
-        const type = this.value;
-        const checked = d3.select(this).property("checked");
-        if (type == "filter_cousins") {
-            filter_cousins = checked;
-        } else if (type == "filter_investors") {
-            filter_investors = checked;
-        } else {
-            if (checked) {
-                filters.add(type);
+        filters = new Set();
+        d3.selectAll(".filter_investor:checked").each(function () {
+            const type = this.value;
+            if (type == "filter_cousins") {
+                filter_cousins = checked;
+            } else if (type == "filter_investors") {
+                filter_investors = checked;
             } else {
-                filters.delete(type);
+                filters.add(type);
             }
-        }
+        });
         const response = find_co_investors_for_multiple_investors(
             selected_investors,
             selected_categories,
