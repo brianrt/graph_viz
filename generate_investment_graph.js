@@ -98,7 +98,7 @@ export function initialize_investments(investments_data, funding_rounds_data, or
         const org_uuid = organizations_data[i].uuid;
         if (org_uuid in company_uuid_to_org_name) {
             const company = company_uuid_to_org_name[org_uuid];
-            const category_list = organizations_data[i].category_groups_list.split(",").filter((c) => c != "");
+            const category_list = organizations_data[i].category_list.split(",").filter((c) => c != "");
             company_to_categories[company] = category_list;
             category_list.forEach((category) => all_categories.add(category));
         }

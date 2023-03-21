@@ -284,12 +284,15 @@ function initializeFilters() {
     // Update graph when category filter checkboxes modified
     d3.selectAll(".filter_investor").on("input", function () {
         filters = new Set();
+        filter_cousins = false;
+        filter_investors = false;
+        // Loop through all checked boxes / radio buttons and set filters and booleans
         d3.selectAll(".filter_investor:checked").each(function () {
             const type = this.value;
             if (type == "filter_cousins") {
-                filter_cousins = checked;
+                filter_cousins = true;
             } else if (type == "filter_investors") {
-                filter_investors = checked;
+                filter_investors = true;
             } else {
                 filters.add(type);
             }
