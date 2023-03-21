@@ -37,8 +37,11 @@ export let company_to_categories = {};
 // company -> company categories
 // company_a: [category_a, category_b]
 export let investor_to_categories = {};
-
 export let all_categories = new Set();
+
+// organization (company or investor) name -> crunchbase cb_url
+// company_a: https://www.crunchbase.com/person/matt-cohler
+export let organization_to_cb_url = {};
 
 // ##### Filter objects #####
 
@@ -101,12 +104,14 @@ export function initialize_investments(investments_data, funding_rounds_data, or
             const category_list = organizations_data[i].category_list.split(",").filter((c) => c != "");
             company_to_categories[company] = category_list;
             category_list.forEach((category) => all_categories.add(category));
+            organization_to_cb_url[company] = organizations_data[i].cb_url;
         }
     }
     for (var i = 0; i < investors_data.length; i++) {
         const name = investors_data[i].name;
         const type = investors_data[i].type;
         investor_to_type[name] = type;
+        organization_to_cb_url[name] = investors_data[i].cb_url;
     }
     for (var i = 0; i < investments_data.length; i++) {
         const fr_uuid = investments_data[i].funding_round_uuid;

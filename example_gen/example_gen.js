@@ -34,6 +34,7 @@ import {
     company_to_categories,
     company_to_investors,
     investor_to_companies,
+    organization_to_cb_url,
     find_co_investors_for_multiple_investors,
     initialize_investments,
     all_categories,
@@ -602,9 +603,20 @@ function runSimulation(isLeadGraph) {
             } else return cousin_outline;
         })
         .on("click", function (e, node) {
-            if (node.type == "lead") {
-                generateLeadGraph(investor_graph);
+            if (is_cousin_graph) {
+                if (node.type == "lead") {
+                    generateLeadGraph(investor_graph);
+                } else {
+                    // Open profile of investor or cousin on crunchbase in new tab
+                    const cb_url = organization_to_cb_url[node.name];
+                    window.open(cb_url, "_blank");
+                }
+            } else if (node.type == "lead") {
+                // Open lead crunchbase url
+                const cb_url = organization_to_cb_url[node.name];
+                window.open(cb_url, "_blank");
             } else if (node.type == "investor") {
+                // Generate Cousin Graph
                 // TODO: Make lookup of investors faster than iteration through whole list
                 const lead_investors = investor_graph;
                 for (var i = 0; i < lead_investors.length; i++) {
