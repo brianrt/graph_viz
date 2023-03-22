@@ -93,6 +93,10 @@ ellipse {
 line {
     stroke: lightgray;
 }
+.darkline {
+    stroke: gray;
+    stroke-width: 3px;
+}
 text {
     text-anchor: middle;
     font-family: "Helvetica Neue", Helvetica, sans-serif;

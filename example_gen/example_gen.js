@@ -390,6 +390,21 @@ function generateLeadGraph(investor_graph_input) {
             x_pos = center_x / n;
             y_pos = center_y / n;
         }
+        // Connect each investor to it's target lead
+        const connected_leads = investor_obj.input_investors;
+        const node_links = [];
+        for (var j = 0; j < connected_leads.length; j++) {
+            const connected_lead = connected_leads[j];
+            const connected_lead_index = lead_name_to_index[connected_lead];
+            const link = {
+                source: i + selected_investors.length,
+                target: connected_lead_index,
+                distance: max_count - countMap[count],
+                is_hover: false,
+            };
+            links.push(link);
+            node_links.push(link);
+        }
         nodes.push({
             name: related_investor,
             x: x_pos,
@@ -398,18 +413,8 @@ function generateLeadGraph(investor_graph_input) {
             count,
             is_hover: false,
             input_investor_nodes,
+            node_links,
         });
-        // Connect each investor to it's target lead
-        const connected_leads = investor_obj.input_investors;
-        for (var j = 0; j < connected_leads.length; j++) {
-            const connected_lead = connected_leads[j];
-            const connected_lead_index = lead_name_to_index[connected_lead];
-            links.push({
-                source: i + selected_investors.length,
-                target: connected_lead_index,
-                distance: max_count - countMap[count],
-            });
-        }
     }
     runSimulation(true);
 }
@@ -636,6 +641,11 @@ function runSimulation(isLeadGraph) {
                         simulation.alpha(0.01).restart();
                     }
                     simulation.force("collision").initialize(nodes);
+                    // Darken links connected to node
+                    for (var i = 0; i < node.node_links.length; i++) {
+                        const node_link = node.node_links[i];
+                        node_link.is_hover = true;
+                    }
                 }
             }
         })
@@ -647,6 +657,11 @@ function runSimulation(isLeadGraph) {
                         simulation.alpha(0.01).restart();
                     }
                     simulation.force("collision").initialize(nodes);
+                    // Remove darkened links connected to node
+                    for (var i = 0; i < node.node_links.length; i++) {
+                        const node_link = node.node_links[i];
+                        node_link.is_hover = false;
+                    }
                 }
             }
         });
@@ -656,6 +671,9 @@ function runSimulation(isLeadGraph) {
             .selectAll("line")
             .data(links)
             .join("line")
+            .classed("darkline", function (d) {
+                return d.is_hover;
+            })
             .attr("x1", function (d) {
                 return d.source.x;
             })
