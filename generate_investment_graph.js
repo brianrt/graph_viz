@@ -231,15 +231,20 @@ function apply_filters(filters, investors) {
     If filter_cousins is true, will only select rounds lead has invested in where company has at least one matching category with my company
     If filter_investors is true, will only select investors who have invested at least once in one of my company's categories
 
-    Returns: Array of co_investors with lead, containing all portfolio cousins they've co_invested in
-    [
-        {
-            investor: investor_dest,
-            num_co_investments: n,
-            portfolio_cousins: Set([portfolio_cousin_1, portfolio_cousin_2, ...])
-        },
-        {...}
-    ]
+    Returns: Array of co_investors with lead, containing all portfolio cousins they've co_invested in, with other info
+    {
+        co_investors:  [
+            {
+                investor: investor_dest,
+                num_co_investments: n,
+                portfolio_cousins: Set([portfolio_cousin_1, portfolio_cousin_2, ...])
+            },
+            {...}
+        ],
+        no_filter: set(investor_1, ...),
+        filtered_cousins: set(investor_1, ...),
+        filtered_investors: set(investor_1, ...),
+    }
 */
 export function find_co_investors_before_date(
     lead,
@@ -326,6 +331,14 @@ function dateToYMD(date) {
     return "" + y + "-" + (m <= 9 ? "0" + m : m) + "-" + (d <= 9 ? "0" + d : d);
 }
 
+function removeInputInvestors(co_investors, to_be_removed) {
+    for (var i = 0; i < to_be_removed.length; i++) {
+        const investor_to_be_removed = to_be_removed[i];
+        co_investors.delete(investor_to_be_removed);
+    }
+    return co_investors;
+}
+
 /*
     Returns all investors that co-invested with any input up to the provided round_date
 
@@ -335,7 +348,7 @@ function dateToYMD(date) {
             {
                 investor: co_investor,
                 num_co_investments: <sum of num_co_investments across all input investors and all rounds>,
-                input_investors: [input_investor_1, input_investor_2]
+                input_investors: [input_investor_1, input_investor_2],
                 portfolio_cousins: {
                     portfolio_cousin_1: Set([input_investor_1, input_investor_2, ...])
                     portfolio_cousin_2: Set([input_investor_2, input_investor_2, ...])
@@ -344,8 +357,13 @@ function dateToYMD(date) {
             {...}
         ]
         no_filter: set(no_filter1, no_filter2, ...)),
-        filtered_cousins: y,
-        filtered_investors: z
+        filtered_cousins: set(...),
+        filtered_investors: set(...),
+        input_investor_counts: {
+            investor_a: 10,
+            investor_b: 23,
+            ...
+        }
     }
 */
 export function find_co_investors_for_multiple_investors(
@@ -360,6 +378,7 @@ export function find_co_investors_for_multiple_investors(
     var co_investors_no_filter = new Set();
     var co_investors_cousin_filter = new Set();
     var co_investors_investor_filter = new Set();
+    var input_investor_counts = {};
 
     // Compute date from prev_months
     var d = new Date();
@@ -377,6 +396,11 @@ export function find_co_investors_for_multiple_investors(
             filter_investors,
             filters
         );
+        // Count num co-investors per input investors, filtering all existing input investors
+        input_investor_counts[input_investor] = removeInputInvestors(
+            new Set(single_input_co_investors.co_investors.map((entry) => entry.investor)),
+            input_investors
+        ).size;
         for (var j = 0; j < single_input_co_investors.co_investors.length; j++) {
             const single_co_investor = single_input_co_investors.co_investors[j];
             const co_investor = single_co_investor.investor;
@@ -422,8 +446,9 @@ export function find_co_investors_for_multiple_investors(
 
     return {
         co_investors,
-        no_filter: co_investors_no_filter,
-        filtered_cousins: co_investors_cousin_filter,
-        filtered_investors: co_investors_investor_filter,
+        no_filter: removeInputInvestors(co_investors_no_filter, input_investors),
+        filtered_cousins: removeInputInvestors(co_investors_cousin_filter, input_investors),
+        filtered_investors: removeInputInvestors(co_investors_investor_filter, input_investors),
+        input_investor_counts,
     };
 }

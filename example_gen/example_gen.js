@@ -152,7 +152,6 @@ function loadSelectedInvestorsTable() {
             return value != investor_to_remove;
         });
         loadInvestorRecs();
-        loadTableData("selected-investors", selected_investors, "selections");
     });
 }
 
@@ -182,9 +181,9 @@ function loadInvestorSelector(company) {
                 // Append to selected-investors
                 if (!selected_investors.includes(investor)) {
                     selected_investors.push(investor);
+                    loadSelectedInvestorsTable();
                     loadInvestorRecs();
                 }
-                loadSelectedInvestorsTable();
             });
         }
     });
@@ -249,6 +248,7 @@ function loadInvestorRecs() {
     );
     investor_graph = response.co_investors;
     setCategoryFilterCounts(response);
+    setSelectedInvestorCounts(response.input_investor_counts);
     generateLeadGraph(investor_graph);
     // Update graph when num investors is modified
     d3.select("#investors-shown").on("input", function () {
@@ -268,8 +268,9 @@ function loadInvestorRecs() {
             filter_investors,
             filters
         );
-        setCategoryFilterCounts(response);
         investor_graph = response.co_investors;
+        setCategoryFilterCounts(response);
+        setSelectedInvestorCounts(response.input_investor_counts);
         generateLeadGraph(investor_graph);
     });
 }
@@ -279,6 +280,16 @@ function setCategoryFilterCounts(response) {
     d3.select("#category-title").text("Matching Industry Filter (" + response.no_filter.size + ")");
     d3.select("#filter_cousins").text(" Filter Cousins (" + response.filtered_cousins.size + ")");
     d3.select("#filter_investors").text(" Filter Investors (" + response.filtered_investors.size + ")");
+}
+
+function setSelectedInvestorCounts(input_investor_counts) {
+    d3.select("#selected-investors")
+        .selectAll("tr")
+        .data(selected_investors)
+        .join("tr")
+        .text(function (investor) {
+            return investor + " (" + input_investor_counts[investor] + ")";
+        });
 }
 
 function initializeFilters() {
@@ -306,8 +317,9 @@ function initializeFilters() {
             filter_investors,
             filters
         );
-        setCategoryFilterCounts(response);
         investor_graph = response.co_investors;
+        setCategoryFilterCounts(response);
+        setSelectedInvestorCounts(response.input_investor_counts);
         generateLeadGraph(investor_graph);
     });
 }
