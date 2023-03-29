@@ -93,6 +93,7 @@ function intialize() {
                 loadCategorySelector(company);
                 initializeFilters();
                 loadInvestorRecs();
+                initializeExportToCSV();
             });
     });
 
@@ -102,6 +103,23 @@ function intialize() {
         d3.selectAll("svg g").attr("transform", e.transform);
     }
     d3.select("svg").call(zoom);
+}
+
+function initializeExportToCSV() {
+    d3.select("#export-to-csv").on("click", function () {
+        let num_investors_to_show = d3.select("#investors-shown").property("value");
+        if (num_investors_to_show == "" || num_investors_to_show < 0) {
+            num_investors_to_show = 0;
+        }
+        let csv_string = "investor,input_investors\n";
+        for (var i = 0; i < Math.min(investor_graph.length, num_investors_to_show); i++) {
+            const row = investor_graph[i];
+            const investor = row.investor;
+            const input_investors = row.input_investors.join("|");
+            csv_string += investor + "," + input_investors + "\n";
+        }
+        navigator.clipboard.writeText(csv_string);
+    });
 }
 
 function computeSVGBounds() {
