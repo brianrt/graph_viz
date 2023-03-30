@@ -157,16 +157,19 @@ export function initialize_investments(investments_data, funding_rounds_data, or
 }
 
 // Helper functions
-function has_overlapping_categories(categories_a, categories_b) {
-    var has_overlap = false;
-    if (categories_a && categories_b) {
-        categories_a.forEach((category_a) => {
-            if (categories_b.has(category_a)) {
-                has_overlap = true;
+function has_overlapping_categories(selected_categories, actual_categories, match_all_categories) {
+    var has_one_overlap = false;
+    var has_entire_overlap = true;
+    if (selected_categories && actual_categories) {
+        selected_categories.forEach((selected_category) => {
+            if (actual_categories.has(selected_category)) {
+                has_one_overlap = true;
+            } else {
+                has_entire_overlap = false;
             }
         });
     }
-    return has_overlap;
+    return match_all_categories ? has_entire_overlap : has_one_overlap;
 }
 
 function apply_filters(filters, investors, lead_filter) {
@@ -250,7 +253,8 @@ export function find_co_investors_before_date(
     filter_cousins,
     filter_investors,
     filters,
-    lead_filter
+    lead_filter,
+    match_all_categories
 ) {
     // Find rounds lead has invested in after after_date
     const lead_rounds = investor_to_rounds[lead];
@@ -269,7 +273,8 @@ export function find_co_investors_before_date(
         cousins.forEach((cousin) => {
             const has_overlapping_categories_cousins = has_overlapping_categories(
                 new Set(selected_categories),
-                new Set(company_to_categories[cousin])
+                new Set(company_to_categories[cousin]),
+                match_all_categories
             );
             // Get all investors who co-invested with lead in cousin, round_date and remove lead
             let cousin_investors = new Set(company_to_round_investors[cousin][round_date]);
@@ -283,7 +288,8 @@ export function find_co_investors_before_date(
             cousin_investors.forEach((cousin_investor) => {
                 const has_overlapping_categories_investors = has_overlapping_categories(
                     new Set(selected_categories),
-                    investor_to_categories[cousin_investor]
+                    investor_to_categories[cousin_investor],
+                    match_all_categories
                 );
                 if (has_overlapping_categories_investors) {
                     co_investors_investor_filter.add(cousin_investor);
@@ -371,7 +377,8 @@ export function find_co_investors_for_multiple_investors(
     filter_cousins,
     filter_investors,
     filters,
-    lead_filter
+    lead_filter,
+    match_all_categories
 ) {
     // Keep track of all co_investors in three scenarios
     var co_investors_no_filter = new Set();
@@ -394,7 +401,8 @@ export function find_co_investors_for_multiple_investors(
             filter_cousins,
             filter_investors,
             filters,
-            lead_filter
+            lead_filter,
+            match_all_categories
         );
         // Count num co-investors per input investors, filtering all existing input investors
         input_investor_counts[input_investor] = removeInputInvestors(

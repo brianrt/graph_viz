@@ -25,6 +25,7 @@ var height;
 var filter_cousins = false;
 var filter_investors = false;
 var is_cousin_graph = false;
+var match_all_categories = false;
 var lead_filter = "any_leads";
 var selected_investors = [];
 var selected_categories = [];
@@ -264,7 +265,8 @@ function loadInvestorRecs() {
         filter_cousins,
         filter_investors,
         filters,
-        lead_filter
+        lead_filter,
+        match_all_categories
     );
     investor_graph = response.co_investors;
     setCategoryFilterCounts(response);
@@ -287,7 +289,8 @@ function loadInvestorRecs() {
             filter_cousins,
             filter_investors,
             filters,
-            lead_filter
+            lead_filter,
+            match_all_categories
         );
         investor_graph = response.co_investors;
         setCategoryFilterCounts(response);
@@ -298,7 +301,7 @@ function loadInvestorRecs() {
 
 function setCategoryFilterCounts(response) {
     // Set filtered numbers
-    d3.select("#category-title").text("Matching Industry Filter (" + response.no_filter.size + ")");
+    d3.select("#filter_no_industry").text("No Filter (" + response.no_filter.size + ")");
     d3.select("#filter_cousins").text(" Filter Cousins (" + response.filtered_cousins.size + ")");
     d3.select("#filter_investors").text(" Filter Investors (" + response.filtered_investors.size + ")");
 }
@@ -326,8 +329,13 @@ function initializeFilters() {
                 filter_cousins = true;
             } else if (type == "filter_investors") {
                 filter_investors = true;
+            } else if (type == "filter_no_industry") {
+                filter_investors = false;
+                filter_cousins = false;
             } else if (type == "only_leads" || type == "only_non_leads" || type == "any_leads") {
                 lead_filter = type;
+            } else if (type == "match_all_categories" || type == "match_any_categories") {
+                match_all_categories = type == "match_all_categories";
             } else {
                 filters.add(type);
             }
@@ -339,7 +347,8 @@ function initializeFilters() {
             filter_cousins,
             filter_investors,
             filters,
-            lead_filter
+            lead_filter,
+            match_all_categories
         );
         investor_graph = response.co_investors;
         setCategoryFilterCounts(response);

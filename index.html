@@ -26,10 +26,20 @@
                 <div class="container" id="category-filter-container">
                     <p id="category-title" class="filter-title">Matching Industry Filter</p>
                     <div id="checkbox-container">
-                        <input type="checkbox" class="filter_investor" value="filter_cousins" />
-                        <label id="filter_cousins" for="filter_cousins"> Filter Cousins</label><br />
-                        <input type="checkbox" class="filter_investor" value="filter_investors" />
-                        <label id="filter_investors" for="filter_investors"> Filter Investors</label><br />
+                        <input type="radio" class="filter_investor" name="filter_industry" value="filter_no_industry" />
+                        <label id="filter_no_industry" for="filter_no_industry">No Filter</label><br />
+                        <input type="radio" class="filter_investor" name="filter_industry" value="filter_cousins" />
+                        <label id="filter_cousins" for="filter_cousins">Filter Cousins</label><br />
+                        <input type="radio" class="filter_investor" name="filter_industry" value="filter_investors" />
+                        <label id="filter_investors" for="filter_investors">Filter Investors</label><br />
+                    </div>
+                    <br />
+                    <p id="matching-categories-title" class="filter-title">Match All or Any</p>
+                    <div id="checkbox-container">
+                        <input type="radio" class="filter_investor" name="match_type" value="match_all_categories" />
+                        <label for="match_all_categories">Match All Industries</label><br />
+                        <input type="radio" class="filter_investor" name="match_type" value="match_any_categories" />
+                        <label for="match_any_categories">Match Any Industry</label><br />
                     </div>
                 </div>
                 <div class="container" id="input-filter-container">
@@ -70,9 +80,8 @@
                         <input type="radio" class="filter_investor" name="filter_investor" value="series_f" />
                         <label id="filter_series_f" for="series_f">Series F</label><br />
                     </div>
-                </div>
-                <div class="container" id="lead-type-filter-container">
-                    <p id="lead-type-title" class="filter-title">Lead (For Round Type Above)</p>
+                    <br />
+                    <p id="lead-type-title" class="filter-title">Is Round Lead</p>
                     <div id="checkbox-container">
                         <input type="radio" class="filter_investor" name="filter_lead_type" value="only_leads" />
                         <label id="filter_only_leads" for="only_leads">Lead</label><br />
