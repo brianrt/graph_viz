@@ -71,6 +71,17 @@
                         <label id="filter_series_f" for="series_f">Series F</label><br />
                     </div>
                 </div>
+                <div class="container" id="lead-type-filter-container">
+                    <p id="lead-type-title" class="filter-title">Lead (For Round Type Above)</p>
+                    <div id="checkbox-container">
+                        <input type="radio" class="filter_investor" name="filter_lead_type" value="only_leads" />
+                        <label id="filter_only_leads" for="only_leads">Lead</label><br />
+                        <input type="radio" class="filter_investor" name="filter_lead_type" value="only_non_leads" />
+                        <label id="filter_only_non_leads" for="only_non_leads">Not Lead</label><br />
+                        <input type="radio" class="filter_investor" name="filter_lead_type" value="any_leads" />
+                        <label id="filter_any_leads" for="any_leads">Any</label><br />
+                    </div>
+                </div>
                 <div class="container" id="export-to-csv-container">
                     <input id="export-to-csv" type="button" value="Copy results to Clipboard" />
                 </div>

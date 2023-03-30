@@ -25,6 +25,7 @@ var height;
 var filter_cousins = false;
 var filter_investors = false;
 var is_cousin_graph = false;
+var lead_filter = "any_leads";
 var selected_investors = [];
 var selected_categories = [];
 var filters = new Set();
@@ -262,7 +263,8 @@ function loadInvestorRecs() {
         prev_months,
         filter_cousins,
         filter_investors,
-        filters
+        filters,
+        lead_filter
     );
     investor_graph = response.co_investors;
     setCategoryFilterCounts(response);
@@ -284,7 +286,8 @@ function loadInvestorRecs() {
             prev_months,
             filter_cousins,
             filter_investors,
-            filters
+            filters,
+            lead_filter
         );
         investor_graph = response.co_investors;
         setCategoryFilterCounts(response);
@@ -323,6 +326,8 @@ function initializeFilters() {
                 filter_cousins = true;
             } else if (type == "filter_investors") {
                 filter_investors = true;
+            } else if (type == "only_leads" || type == "only_non_leads" || type == "any_leads") {
+                lead_filter = type;
             } else {
                 filters.add(type);
             }
@@ -333,7 +338,8 @@ function initializeFilters() {
             prev_months,
             filter_cousins,
             filter_investors,
-            filters
+            filters,
+            lead_filter
         );
         investor_graph = response.co_investors;
         setCategoryFilterCounts(response);

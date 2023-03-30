@@ -43,14 +43,14 @@ export let all_categories = new Set();
 // company_a: https://www.crunchbase.com/person/matt-cohler
 export let organization_to_cb_url = {};
 
-// ##### Filter objects #####
+// #################### Filter objects ####################
 
 // investor -> type
 // investor_a: person / organization
 let investor_to_type = {};
 
-// investor -> round_type
-// investor_a: Set([series_a, series_b, ...])
+// investor -> {round_type: is_lead}
+// investor_a: {series_a: true, series_b: false, ...}
 let investor_to_round_types = {};
 
 // Maps filter values to their objects
@@ -117,6 +117,7 @@ export function initialize_investments(investments_data, funding_rounds_data, or
         const fr_uuid = investments_data[i].funding_round_uuid;
         const company = funding_uuid_to_company_name[fr_uuid];
         const investor = investments_data[i].investor_name;
+        const is_lead = investments_data[i].is_lead_investor === "True";
         const round_date = funding_uuid_to_round_date[fr_uuid];
         const round_type = funding_uuid_to_round_type[fr_uuid];
         const categories = company_to_categories[company] || new Set("");
@@ -130,19 +131,22 @@ export function initialize_investments(investments_data, funding_rounds_data, or
         }
         if (!(investor in investor_to_rounds)) {
             investor_to_rounds[investor] = {};
-            investor_to_round_types[investor] = new Set();
+            investor_to_round_types[investor] = {};
             investor_to_companies[investor] = new Set();
             investor_to_categories[investor] = new Set();
         }
         if (!(round_date in investor_to_rounds[investor])) {
             investor_to_rounds[investor][round_date] = new Set();
         }
+        if (!(round_type in investor_to_round_types[investor])) {
+            investor_to_round_types[investor][round_type] = false;
+        }
 
         company_to_round_investors[company][round_date].add(investor);
         investor_to_rounds[investor][round_date].add(company);
         company_to_investors[company].add(investor);
         investor_to_companies[investor].add(company);
-        investor_to_round_types[investor].add(round_type);
+        investor_to_round_types[investor][round_type] ||= is_lead;
         categories.forEach((category) => {
             investor_to_categories[investor].add(category);
         });
@@ -165,7 +169,7 @@ function has_overlapping_categories(categories_a, categories_b) {
     return has_overlap;
 }
 
-function apply_filters(filters, investors) {
+function apply_filters(filters, investors, lead_filter) {
     if (filters.size == 0) {
         return investors;
     }
@@ -191,13 +195,19 @@ function apply_filters(filters, investors) {
                 const filter_for_type = filters_for_type[i];
                 const filter_object = filter_to_objects[filter_for_type];
                 const actual_value = filter_object[investor];
-                // Use actual_value type to determine filter type
-                // Only needs to pass one per filter type
-                if (actual_value instanceof Set) {
-                    didPassFilterType = actual_value.has(filter_for_type);
-                    break;
-                } else if (actual_value instanceof String) {
+                if (filter_type == "investor_to_round_types") {
+                    if (lead_filter == "only_leads") {
+                        didPassFilterType = filter_for_type in actual_value ? actual_value[filter_for_type] : false;
+                    } else if (lead_filter == "only_non_leads") {
+                        didPassFilterType = filter_for_type in actual_value ? !actual_value[filter_for_type] : false;
+                    } else {
+                        didPassFilterType = filter_for_type in actual_value;
+                    }
+                } else {
                     didPassFilterType = actual_value == filter_for_type;
+                }
+                if (didPassFilterType) {
+                    // Only needs to pass one per filter type
                     break;
                 }
             }
@@ -239,7 +249,8 @@ export function find_co_investors_before_date(
     after_date,
     filter_cousins,
     filter_investors,
-    filters
+    filters,
+    lead_filter
 ) {
     // Find rounds lead has invested in after after_date
     const lead_rounds = investor_to_rounds[lead];
@@ -264,7 +275,7 @@ export function find_co_investors_before_date(
             let cousin_investors = new Set(company_to_round_investors[cousin][round_date]);
             cousin_investors.delete(lead);
             // Apply all other non-category filters
-            cousin_investors = apply_filters(filters, cousin_investors);
+            cousin_investors = apply_filters(filters, cousin_investors, lead_filter);
             co_investors_no_filter = new Set([...co_investors_no_filter, ...cousin_investors]);
             if (has_overlapping_categories_cousins) {
                 co_investors_cousin_filter = new Set([...co_investors_cousin_filter, ...cousin_investors]);
@@ -359,7 +370,8 @@ export function find_co_investors_for_multiple_investors(
     prev_months,
     filter_cousins,
     filter_investors,
-    filters
+    filters,
+    lead_filter
 ) {
     // Keep track of all co_investors in three scenarios
     var co_investors_no_filter = new Set();
@@ -381,7 +393,8 @@ export function find_co_investors_for_multiple_investors(
             after_date,
             filter_cousins,
             filter_investors,
-            filters
+            filters,
+            lead_filter
         );
         // Count num co-investors per input investors, filtering all existing input investors
         input_investor_counts[input_investor] = removeInputInvestors(
