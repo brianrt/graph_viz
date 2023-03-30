@@ -50,7 +50,7 @@ export let organization_to_cb_url = {};
 let investor_to_type = {};
 
 // investor -> round_type
-// investor_a: series_a
+// investor_a: Set([series_a, series_b, ...])
 let investor_to_round_types = {};
 
 // Maps filter values to their objects
@@ -130,39 +130,22 @@ export function initialize_investments(investments_data, funding_rounds_data, or
         }
         if (!(investor in investor_to_rounds)) {
             investor_to_rounds[investor] = {};
-            investor_to_round_types[investor] = {};
+            investor_to_round_types[investor] = new Set();
             investor_to_companies[investor] = new Set();
             investor_to_categories[investor] = new Set();
         }
         if (!(round_date in investor_to_rounds[investor])) {
             investor_to_rounds[investor][round_date] = new Set();
         }
-        if (!(round_type in investor_to_round_types[investor])) {
-            investor_to_round_types[investor][round_type] = 0;
-        }
 
         company_to_round_investors[company][round_date].add(investor);
         investor_to_rounds[investor][round_date].add(company);
         company_to_investors[company].add(investor);
         investor_to_companies[investor].add(company);
-        investor_to_round_types[investor][round_type] += 1;
+        investor_to_round_types[investor].add(round_type);
         categories.forEach((category) => {
             investor_to_categories[investor].add(category);
         });
-    }
-    // Choose top round types per investor
-    for (const investor in investor_to_round_types) {
-        var max = -1;
-        var max_round = "";
-        const round_types = investor_to_round_types[investor];
-        for (const round in round_types) {
-            const count = round_types[round];
-            if (count > max) {
-                max_round = round;
-                max = count;
-            }
-        }
-        investor_to_round_types[investor] = max_round;
     }
     /*
     write company_to_categories investor_to_categories to separate files
@@ -208,9 +191,13 @@ function apply_filters(filters, investors) {
                 const filter_for_type = filters_for_type[i];
                 const filter_object = filter_to_objects[filter_for_type];
                 const actual_value = filter_object[investor];
-                if (actual_value == filter_for_type) {
-                    // Only needs to pass one per filter type
-                    didPassFilterType = true;
+                // Use actual_value type to determine filter type
+                // Only needs to pass one per filter type
+                if (actual_value instanceof Set) {
+                    didPassFilterType = actual_value.has(filter_for_type);
+                    break;
+                } else if (actual_value instanceof String) {
+                    didPassFilterType = actual_value == filter_for_type;
                     break;
                 }
             }
