@@ -69,7 +69,7 @@ const filter_to_objects = {
 };
 
 // Used for grouping common filter types together
-const filter_to_filter_type = {
+export const filter_to_filter_type = {
     person: "investor_to_type",
     organization: "investor_to_type",
     angel: "investor_to_round_types",

@@ -31,6 +31,7 @@ var selected_investors = [];
 var selected_categories = [];
 var filters = new Set();
 var prev_months = 48;
+var num_investors_to_show = 10;
 
 import {
     company_to_categories,
@@ -40,6 +41,7 @@ import {
     find_co_investors_for_multiple_investors,
     initialize_investments,
     all_categories,
+    filter_to_filter_type,
 } from "../generate_investment_graph.js";
 /*  
     investor_graph: {
@@ -95,7 +97,7 @@ function intialize() {
                 loadCategorySelector(company);
                 initializeFilters();
                 loadInvestorRecs();
-                initializeExportToCSV();
+                initializeExportToCSV(company);
             });
     });
 
@@ -107,18 +109,92 @@ function intialize() {
     d3.select("svg").call(zoom);
 }
 
-function initializeExportToCSV() {
+function initializeExportToCSV(company) {
     d3.select("#export-to-csv").on("click", function () {
-        let num_investors_to_show = d3.select("#investors-shown").property("value");
-        if (num_investors_to_show == "" || num_investors_to_show < 0) {
-            num_investors_to_show = 0;
-        }
-        let csv_string = "investor,input_investors\n";
+        const investor_recs_rows = [];
+        const input_rows = [];
+
+        // Investor recs rows
+        investor_recs_rows.push("Recommended Investor\tInput Investors");
         for (var i = 0; i < Math.min(investor_graph.length, num_investors_to_show); i++) {
             const row = investor_graph[i];
             const investor = row.investor;
-            const input_investors = row.input_investors.join("|");
-            csv_string += investor + "," + input_investors + "\n";
+            const input_investors = row.input_investors.join(", ");
+            investor_recs_rows.push(investor + "\t" + input_investors);
+        }
+
+        // Input rows
+        // Selected Company
+        input_rows.push("Inputs");
+        input_rows.push("Company\t" + company);
+        input_rows.push("");
+
+        // Input Investors
+        for (var i = 0; i < selected_investors.length; i++) {
+            const selected_investor = selected_investors[i];
+            if (i == 0) {
+                input_rows.push("Input Investors\t" + selected_investor);
+            } else {
+                input_rows.push("\t" + selected_investor);
+            }
+        }
+        input_rows.push("");
+
+        // Categories
+        for (var i = 0; i < selected_categories.length; i++) {
+            const selected_category = selected_categories[i];
+            if (i == 0) {
+                input_rows.push("Industries\t" + selected_category);
+            } else {
+                input_rows.push("\t" + selected_category);
+            }
+        }
+        input_rows.push("");
+
+        // Industry Filter
+        const match_type = match_all_categories ? "Match all Industries" : "Match any Industry";
+        if (filter_cousins) {
+            input_rows.push("Matching Industry Filter\t" + "Filter cousins\t" + match_type);
+        } else if (filter_investors) {
+            input_rows.push("Matching Industry Filter\t" + "Filter Investors\t" + match_type);
+        } else {
+            input_rows.push("Matching Industry Filter\t" + "No Filter");
+        }
+        input_rows.push("");
+
+        // Investor Age / Number Shown
+        input_rows.push("Number of Investors Shown\t" + num_investors_to_show);
+        input_rows.push("Months to Consider\t" + prev_months);
+        input_rows.push("");
+
+        // Filters
+        filters.forEach((filter) => {
+            const filter_type = filter_to_filter_type[filter];
+            const filter_label = d3.select("#" + filter).html();
+            if (filter_type == "investor_to_type") {
+                input_rows.push("Investor Type\t" + filter_label);
+            } else if (filter_type == "investor_to_round_types") {
+                var lead_label = "Leads and Non-Leads";
+                if (lead_filter == "only_leads") {
+                    lead_label = "Only Leads";
+                } else if (lead_filter == "only_non_leads") {
+                    lead_label = "Only Non Leads";
+                }
+                input_rows.push("Round Type\t" + filter_label + "\t" + lead_label);
+            }
+        });
+
+        // Merge recs and input rows
+        let csv_string = "";
+        const max_rows = Math.max(investor_recs_rows.length, input_rows.length);
+        for (var i = 0; i < max_rows; i++) {
+            if (i < investor_recs_rows.length && i < input_rows.length) {
+                csv_string += investor_recs_rows[i] + "\t\t\t" + input_rows[i] + "\n";
+            } else if (i < investor_recs_rows.length) {
+                csv_string += investor_recs_rows[i] + "\n";
+            } else {
+                csv_string += "\t\t\t\t" + input_rows[i] + "\n";
+            }
         }
         navigator.clipboard.writeText(csv_string);
     });
@@ -382,7 +458,7 @@ function generateLeadGraph(investor_graph_input) {
     }
 
     // Splice array based on num_investors_to_show
-    let num_investors_to_show = d3.select("#investors-shown").property("value");
+    num_investors_to_show = d3.select("#investors-shown").property("value");
     if (num_investors_to_show == "" || num_investors_to_show < 0) {
         num_investors_to_show = 0;
     }
