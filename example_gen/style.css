@@ -60,6 +60,10 @@ input[type="button"] {
     cursor: pointer;
 }
 
+#create-permalink {
+    margin-top: 10px;
+}
+
 #selected-investors {
     margin-top: 10px;
 }

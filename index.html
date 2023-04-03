@@ -3,7 +3,7 @@
     <body>
         <div id="bounding-container" class="center">
             <div class="container" id="company-container">
-                <input id="company-search" type="text" placeholder="Select your company" />
+                <input id="company-search" type="text" placeholder="Select your company (or Permalink)" />
                 <div class="selected-results">
                     <table id="company-selector"></table>
                 </div>
@@ -26,19 +26,19 @@
                 <div class="container" id="category-filter-container">
                     <p id="category-title" class="filter-title">Matching Industry Filter</p>
                     <div id="checkbox-container">
-                        <input type="radio" class="filter_investor" name="filter_industry" value="filter_no_industry" />
-                        <label id="filter_no_industry" for="filter_no_industry">No Filter</label><br />
-                        <input type="radio" class="filter_investor" name="filter_industry" value="filter_cousins" />
-                        <label id="filter_cousins" for="filter_cousins">Filter Cousins</label><br />
-                        <input type="radio" class="filter_investor" name="filter_industry" value="filter_investors" />
-                        <label id="filter_investors" for="filter_investors">Filter Investors</label><br />
+                        <input type="radio" id="filter_no_industry" class="filter_investor" name="filter_industry" value="filter_no_industry" checked />
+                        <label id="label_filter_no_industry" for="filter_no_industry">No Filter</label><br />
+                        <input type="radio" id="filter_cousins" class="filter_investor" name="filter_industry" value="filter_cousins" />
+                        <label id="label_filter_cousins" for="filter_cousins">Filter Cousins</label><br />
+                        <input type="radio" id="filter_investors" class="filter_investor" name="filter_industry" value="filter_investors" />
+                        <label id="label_filter_investors" for="filter_investors">Filter Investors</label><br />
                     </div>
                     <br />
                     <p id="matching-categories-title" class="filter-title">Match All or Any</p>
                     <div id="checkbox-container">
-                        <input type="radio" class="filter_investor" name="match_type" value="match_all_categories" />
+                        <input type="radio" id="match_all_categories" class="filter_investor" name="match_type" value="match_all_categories" />
                         <label for="match_all_categories">Match All Industries</label><br />
-                        <input type="radio" class="filter_investor" name="match_type" value="match_any_categories" />
+                        <input type="radio" id="match_any_categories" class="filter_investor" name="match_type" value="match_any_categories" checked />
                         <label for="match_any_categories">Match Any Industry</label><br />
                     </div>
                 </div>
@@ -52,47 +52,49 @@
                 <div class="container" id="type-filter-container">
                     <p id="type-title" class="filter-title">Investor Type</p>
                     <div id="checkbox-container">
-                        <input type="checkbox" class="filter_investor" value="person" />
-                        <label id="person" for="person">Person</label><br />
-                        <input type="checkbox" class="filter_investor" value="organization" />
-                        <label id="organization" for="organization">Organization</label><br />
+                        <input type="checkbox" id="person" class="filter_investor" value="person" />
+                        <label id="label-person" for="person">Person</label><br />
+                        <input type="checkbox" id="organization" class="filter_investor" value="organization" />
+                        <label id="label-organization" for="organization">Organization</label><br />
                     </div>
                 </div>
                 <div class="container" id="round-type-filter-container">
                     <p id="round-type-title" class="filter-title">Round Type</p>
                     <div id="checkbox-container">
-                        <input type="radio" class="filter_investor" name="filter_investor" value="angel" />
-                        <label id="angel" for="angel">Angel</label><br />
-                        <input type="radio" class="filter_investor" name="filter_investor" value="pre_seed" />
-                        <label id="pre_seed" for="pre_seed">Pre Seed</label><br />
-                        <input type="radio" class="filter_investor" name="filter_investor" value="seed" />
-                        <label id="seed" for="seed">Seed</label><br />
-                        <input type="radio" class="filter_investor" name="filter_investor" value="series_a" />
-                        <label id="series_a" for="series_a">Series A</label><br />
-                        <input type="radio" class="filter_investor" name="filter_investor" value="series_b" />
-                        <label id="series_b" for="series_b">Series B</label><br />
-                        <input type="radio" class="filter_investor" name="filter_investor" value="series_c" />
-                        <label id="series_c" for="series_c">Series C</label><br />
-                        <input type="radio" class="filter_investor" name="filter_investor" value="series_d" />
-                        <label id="series_d" for="series_d">Series D</label><br />
-                        <input type="radio" class="filter_investor" name="filter_investor" value="series_e" />
-                        <label id="series_e" for="series_e">Series E</label><br />
-                        <input type="radio" class="filter_investor" name="filter_investor" value="series_f" />
-                        <label id="series_f" for="series_f">Series F</label><br />
+                        <input type="radio" id="angel" class="filter_investor" name="filter_investor" value="angel" />
+                        <label id="label-angel" for="angel">Angel</label><br />
+                        <input type="radio" id="pre_seed" class="filter_investor" name="filter_investor" value="pre_seed" />
+                        <label id="label-pre_seed" for="pre_seed">Pre Seed</label><br />
+                        <input type="radio" id="seed" class="filter_investor" name="filter_investor" value="seed" />
+                        <label id="label-seed" for="seed">Seed</label><br />
+                        <input type="radio" id="series_a" class="filter_investor" name="filter_investor" value="series_a" />
+                        <label id="label-series_a" for="series_a">Series A</label><br />
+                        <input type="radio" id="series_b" class="filter_investor" name="filter_investor" value="series_b" />
+                        <label id="label-series_b" for="series_b">Series B</label><br />
+                        <input type="radio" id="series_c" class="filter_investor" name="filter_investor" value="series_c" />
+                        <label id="label-series_c" for="series_c">Series C</label><br />
+                        <input type="radio" id="series_d" class="filter_investor" name="filter_investor" value="series_d" />
+                        <label id="label-series_d" for="series_d">Series D</label><br />
+                        <input type="radio" id="series_e" class="filter_investor" name="filter_investor" value="series_e" />
+                        <label id="label-series_e" for="series_e">Series E</label><br />
+                        <input type="radio" id="series_f" class="filter_investor" name="filter_investor" value="series_f" />
+                        <label id="label-series_f" for="series_f">Series F</label><br />
                     </div>
                     <br />
                     <p id="lead-type-title" class="filter-title">Is Round Lead</p>
                     <div id="checkbox-container">
-                        <input type="radio" class="filter_investor" name="filter_lead_type" value="only_leads" />
-                        <label id="only_leads" for="only_leads">Lead</label><br />
-                        <input type="radio" class="filter_investor" name="filter_lead_type" value="only_non_leads" />
-                        <label id="only_non_leads" for="only_non_leads">Not Lead</label><br />
-                        <input type="radio" class="filter_investor" name="filter_lead_type" value="any_leads" />
-                        <label id="any_leads" for="any_leads">Any</label><br />
+                        <input type="radio" id="only_leads" class="filter_investor" name="filter_lead_type" value="only_leads" />
+                        <label id="label-only_leads" for="only_leads">Lead</label><br />
+                        <input type="radio" id="only_non_leads" class="filter_investor" name="filter_lead_type" value="only_non_leads" />
+                        <label id="label-only_non_leads" for="only_non_leads">Not Lead</label><br />
+                        <input type="radio" id="any_leads" class="filter_investor" name="filter_lead_type" value="any_leads" />
+                        <label id="label-any_leads" for="any_leads">Any</label><br />
                     </div>
                 </div>
                 <div class="container" id="export-to-csv-container">
-                    <input id="export-to-csv" type="button" value="Copy results to Clipboard" />
+                    <p class="filter-title">Export Results</p>
+                    <input id="export-to-csv" type="button" value="Copy Results Table to Clipboard" />
+                    <input id="create-permalink" type="button" value="Copy Permalink to Clipboard" />
                 </div>
             </div>
         </div>
