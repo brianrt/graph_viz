@@ -157,23 +157,23 @@ export function initialize_investments(investments_data, funding_rounds_data, or
 }
 
 // Helper functions
-function has_overlapping_categories(selected_categories, actual_categories, match_all_categories) {
+function has_overlapping_sets(selected_sets, actual_sets, match_all_sets) {
     var has_one_overlap = false;
     var has_entire_overlap = true;
-    if (selected_categories && actual_categories) {
-        selected_categories.forEach((selected_category) => {
-            if (actual_categories.has(selected_category)) {
+    if (selected_sets && actual_sets) {
+        selected_sets.forEach((selected_category) => {
+            if (actual_sets.has(selected_category)) {
                 has_one_overlap = true;
             } else {
                 has_entire_overlap = false;
             }
         });
     }
-    return match_all_categories ? has_entire_overlap : has_one_overlap;
+    return match_all_sets ? has_entire_overlap : has_one_overlap;
 }
 
-function apply_filters(filters, investors, lead_filter) {
-    if (filters.size == 0) {
+function apply_filters(filters, investors, lead_filter, selected_competitors) {
+    if (filters.size == 0 && selected_competitors.length == 0) {
         return investors;
     }
 
@@ -190,37 +190,46 @@ function apply_filters(filters, investors, lead_filter) {
     // Needs one match per selected filter type to be included
     const filtered_investors = new Set();
     investors.forEach((investor) => {
-        var shouldAddInvestor = true;
-        for (const filter_type in filter_type_to_filter) {
-            var didPassFilterType = false;
-            const filters_for_type = filter_type_to_filter[filter_type];
-            for (var i = 0; i < filters_for_type.length; i++) {
-                const filter_for_type = filters_for_type[i];
-                const filter_object = filter_to_objects[filter_for_type];
-                const actual_value = filter_object[investor];
-                if (filter_type == "investor_to_round_types") {
-                    if (lead_filter == "only_leads") {
-                        didPassFilterType = filter_for_type in actual_value ? actual_value[filter_for_type] : false;
-                    } else if (lead_filter == "only_non_leads") {
-                        didPassFilterType = filter_for_type in actual_value ? !actual_value[filter_for_type] : false;
+        // Filter out if invested in any competitors
+        const is_competitor = has_overlapping_sets(
+            new Set(selected_competitors),
+            investor_to_companies[investor],
+            false
+        );
+        if (!is_competitor) {
+            var shouldAddInvestor = true;
+            for (const filter_type in filter_type_to_filter) {
+                var didPassFilterType = false;
+                const filters_for_type = filter_type_to_filter[filter_type];
+                for (var i = 0; i < filters_for_type.length; i++) {
+                    const filter_for_type = filters_for_type[i];
+                    const filter_object = filter_to_objects[filter_for_type];
+                    const actual_value = filter_object[investor];
+                    if (filter_type == "investor_to_round_types") {
+                        if (lead_filter == "only_leads") {
+                            didPassFilterType = filter_for_type in actual_value ? actual_value[filter_for_type] : false;
+                        } else if (lead_filter == "only_non_leads") {
+                            didPassFilterType =
+                                filter_for_type in actual_value ? !actual_value[filter_for_type] : false;
+                        } else {
+                            didPassFilterType = filter_for_type in actual_value;
+                        }
                     } else {
-                        didPassFilterType = filter_for_type in actual_value;
+                        didPassFilterType = actual_value == filter_for_type;
                     }
-                } else {
-                    didPassFilterType = actual_value == filter_for_type;
+                    if (didPassFilterType) {
+                        // Only needs to pass one per filter type
+                        break;
+                    }
                 }
-                if (didPassFilterType) {
-                    // Only needs to pass one per filter type
+                if (!didPassFilterType) {
+                    shouldAddInvestor = false;
                     break;
                 }
             }
-            if (!didPassFilterType) {
-                shouldAddInvestor = false;
-                break;
+            if (shouldAddInvestor) {
+                filtered_investors.add(investor);
             }
-        }
-        if (shouldAddInvestor) {
-            filtered_investors.add(investor);
         }
     });
     return filtered_investors;
@@ -249,6 +258,7 @@ function apply_filters(filters, investors, lead_filter) {
 export function find_co_investors_before_date(
     lead,
     selected_categories,
+    selected_competitors,
     after_date,
     filter_cousins,
     filter_investors,
@@ -271,7 +281,7 @@ export function find_co_investors_before_date(
         const round_date = round_dates[i];
         const cousins = lead_rounds[round_date];
         cousins.forEach((cousin) => {
-            const has_overlapping_categories_cousins = has_overlapping_categories(
+            const has_overlapping_categories_cousins = has_overlapping_sets(
                 new Set(selected_categories),
                 new Set(company_to_categories[cousin]),
                 match_all_categories
@@ -280,13 +290,13 @@ export function find_co_investors_before_date(
             let cousin_investors = new Set(company_to_round_investors[cousin][round_date]);
             cousin_investors.delete(lead);
             // Apply all other non-category filters
-            cousin_investors = apply_filters(filters, cousin_investors, lead_filter);
+            cousin_investors = apply_filters(filters, cousin_investors, lead_filter, selected_competitors);
             co_investors_no_filter = new Set([...co_investors_no_filter, ...cousin_investors]);
             if (has_overlapping_categories_cousins) {
                 co_investors_cousin_filter = new Set([...co_investors_cousin_filter, ...cousin_investors]);
             }
             cousin_investors.forEach((cousin_investor) => {
-                const has_overlapping_categories_investors = has_overlapping_categories(
+                const has_overlapping_categories_investors = has_overlapping_sets(
                     new Set(selected_categories),
                     investor_to_categories[cousin_investor],
                     match_all_categories
@@ -373,6 +383,7 @@ function removeInputInvestors(co_investors, to_be_removed) {
 export function find_co_investors_for_multiple_investors(
     input_investors,
     selected_categories,
+    selected_competitors,
     prev_months,
     filter_cousins,
     filter_investors,
@@ -397,6 +408,7 @@ export function find_co_investors_for_multiple_investors(
         const single_input_co_investors = find_co_investors_before_date(
             input_investor,
             selected_categories,
+            selected_competitors,
             after_date,
             filter_cousins,
             filter_investors,

@@ -29,6 +29,7 @@ var is_cousin_graph = false;
 var match_all_categories = false;
 var lead_filter = "any_leads";
 var selected_investors = [];
+var selected_competitors = [];
 var selected_categories = [];
 var filters = new Set();
 var prev_months = 24;
@@ -118,6 +119,7 @@ function initializeInitializeFunctions() {
 
     // Initialize all other components
     loadInvestorSelector();
+    loadCompetitorSelector();
     loadCategorySelector();
     initializeFilters();
     loadInvestorRecs();
@@ -129,6 +131,9 @@ function createPermalink() {
     var permalink = "company=" + company;
     if (selected_investors.length > 0) {
         permalink += "&selected_investors=" + selected_investors.join(",");
+    }
+    if (selected_competitors.length > 0) {
+        permalink += "&selected_competitors=" + selected_competitors.join(",");
     }
     if (selected_categories.length > 0) {
         permalink += "&selected_categories=" + selected_categories.join(",");
@@ -166,6 +171,9 @@ function loadFromPermalink(permalink) {
                 break;
             case "selected_investors":
                 selected_investors = val.split(",");
+                break;
+            case "selected_competitors":
+                selected_competitors = val.split(",");
                 break;
             case "selected_categories":
                 selected_categories = val.split(",");
@@ -238,6 +246,17 @@ function initializeExportToCSV() {
                 input_rows.push("Input Investors\t" + selected_investor);
             } else {
                 input_rows.push("\t" + selected_investor);
+            }
+        }
+        input_rows.push("");
+
+        // Competitors
+        for (var i = 0; i < selected_competitors.length; i++) {
+            const selected_competitor = selected_competitors[i];
+            if (i == 0) {
+                input_rows.push("Competitors\t" + selected_competitor);
+            } else {
+                input_rows.push("\t" + selected_competitor);
             }
         }
         input_rows.push("");
@@ -354,6 +373,7 @@ function loadSelectedInvestorsTable() {
             return value != investor_to_remove;
         });
         loadInvestorRecs();
+        // Don't call loadTableData here as we will populate it with count info in setSelectedInvestorCounts below
     });
 }
 
@@ -387,6 +407,53 @@ function loadInvestorSelector() {
                 if (!selected_investors.includes(investor)) {
                     selected_investors.push(investor);
                     loadSelectedInvestorsTable();
+                    loadInvestorRecs();
+                }
+            });
+        }
+    });
+}
+
+// ######### Competitor Selector #########
+function loadSelectedCompetitorsTable() {
+    loadTableData("selected-competitors", selected_competitors, "selections").on(
+        "click",
+        function (e, competitor_to_remove) {
+            selected_competitors = selected_competitors.filter(function (value) {
+                return value != competitor_to_remove;
+            });
+            loadInvestorRecs();
+            loadTableData("selected-competitors", selected_competitors, "selections");
+        }
+    );
+}
+
+function loadCompetitorSelector() {
+    const competitors = Object.keys(company_to_investors).sort();
+    // Populate competitors
+    loadSelectedCompetitorsTable();
+
+    // Search competitors
+    d3.select("#competitors-search").on("input", function () {
+        const competitor_prefix = this.value;
+        if (competitor_prefix == "") {
+            search_results = [];
+            d3.select("#selected-competitors").style("display", null);
+            d3.select("#competitors-selector").selectAll("tr").data(search_results).join("tr");
+        } else {
+            // Hide selected results
+            d3.select("#selected-competitors").style("display", "none");
+            var search_results = searchResults(competitor_prefix, competitors);
+            loadTableData("competitors-selector", search_results, "dropdown").on("click", function (e, competitor) {
+                // Set clicked company and clear results
+                search_results = [];
+                d3.select("#selected-competitors").style("display", null);
+                d3.select("#competitors-search").property("value", "");
+                d3.select("#competitors-selector").selectAll("tr").data(search_results).join("tr");
+                // Append to selected-competitors
+                if (!selected_competitors.includes(competitor)) {
+                    selected_competitors.push(competitor);
+                    loadSelectedCompetitorsTable();
                     loadInvestorRecs();
                 }
             });
@@ -449,6 +516,7 @@ function loadInvestorRecs() {
     const response = find_co_investors_for_multiple_investors(
         selected_investors,
         selected_categories,
+        selected_competitors,
         prev_months,
         filter_cousins,
         filter_investors,
@@ -477,6 +545,7 @@ function loadInvestorRecs() {
         const response = find_co_investors_for_multiple_investors(
             selected_investors,
             selected_categories,
+            selected_competitors,
             prev_months,
             filter_cousins,
             filter_investors,
@@ -535,6 +604,7 @@ function initializeFilters() {
         const response = find_co_investors_for_multiple_investors(
             selected_investors,
             selected_categories,
+            selected_competitors,
             prev_months,
             filter_cousins,
             filter_investors,
