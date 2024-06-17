@@ -83,48 +83,25 @@ export const filter_to_filter_type = {
     series_f: "investor_to_round_types",
 };
 
-export function initialize_investments(investments_data, funding_rounds_data, organizations_data, investors_data) {
-    /*
-    if the files for company_to_categories already exists, pull from that
-    if investor_to_categories exists, pull from that
-    otherwise run this whole fuckin stupid thing
-    */
-    for (var i = 0; i < funding_rounds_data.length; i++) {
-        const fr_uuid = funding_rounds_data[i].uuid;
-        const org_uuid = funding_rounds_data[i].org_uuid;
-        funding_uuid_to_company_name[fr_uuid] = funding_rounds_data[i].org_name;
-        funding_uuid_to_round_date[fr_uuid] = funding_rounds_data[i].announced_on;
-        company_uuid_to_org_name[org_uuid] = funding_rounds_data[i].org_name;
-        funding_uuid_to_round_type[fr_uuid] = funding_rounds_data[i].investment_type;
-    }
-    for (var i = 0; i < organizations_data.length; i++) {
-        const org_uuid = organizations_data[i].uuid;
-        if (org_uuid in company_uuid_to_org_name) {
-            const company = company_uuid_to_org_name[org_uuid];
-            const category_list = organizations_data[i].category_list.split(",").filter((c) => c != "");
-            company_to_categories[company] = category_list;
-            category_list.forEach((category) => all_categories.add(category));
-            organization_to_cb_url[company] = organizations_data[i].cb_url;
-        }
-    }
-    for (var i = 0; i < investors_data.length; i++) {
-        const name = investors_data[i].name;
-        const type = investors_data[i].type;
-        investor_to_type[name] = type;
-        organization_to_cb_url[name] = investors_data[i].cb_url;
-    }
-    for (var i = 0; i < investments_data.length; i++) {
-        const fr_uuid = investments_data[i].funding_round_uuid;
-        const company = funding_uuid_to_company_name[fr_uuid];
-        const investor = investments_data[i].investor_name;
-        const is_lead = investments_data[i].is_lead_investor === "True";
-        const round_date = funding_uuid_to_round_date[fr_uuid];
-        const round_type = funding_uuid_to_round_type[fr_uuid];
-        const categories = company_to_categories[company] || new Set("");
+export function initialize_investments(data) {
+    for (var i = 0; i < data.length; i++) {
+        const company = data[i].company_name;
+        const investor = data[i].investor_name;
+        const round_date = data[i].funded_at;
+        const funding_round_type = data[i].funding_round_type;
+        const funding_round_code = data[i].funding_round_code;
+        const categories = data[i].company_category_list.split("|").filter((c) => c != "");
+        const investor_permalink = data[i].investor_permalink;
+        const company_permalink = data[i].company_permalink;
+        const company_url = "https://www.crunchbase.com" + company_permalink;
+        const investor_url = "https://www.crunchbase.com" + investor_permalink;
+        const investor_type = investor_permalink.startsWith("/organization") ? "organization" : "person";
+        const round_type = get_round_type(funding_round_type, funding_round_code);
 
         if (!(company in company_to_round_investors)) {
             company_to_round_investors[company] = {};
             company_to_investors[company] = new Set();
+            company_to_categories[company] = new Set();
         }
         if (!(round_date in company_to_round_investors[company])) {
             company_to_round_investors[company][round_date] = new Set();
@@ -146,17 +123,29 @@ export function initialize_investments(investments_data, funding_rounds_data, or
         investor_to_rounds[investor][round_date].add(company);
         company_to_investors[company].add(investor);
         investor_to_companies[investor].add(company);
-        investor_to_round_types[investor][round_type] ||= is_lead;
+        organization_to_cb_url[investor] = investor_url;
+        organization_to_cb_url[company] = company_url;
+        investor_to_type[investor] = investor_type;
+        // investor_to_round_types[investor][round_type] ||= is_lead;
         categories.forEach((category) => {
+            all_categories.add(category);
+            company_to_categories[company].add(category);
             investor_to_categories[investor].add(category);
         });
     }
-    /*
-    write company_to_categories investor_to_categories to separate files
-    */
 }
 
 // Helper functions
+function get_round_type(funding_round_type, funding_round_code) {
+    if (funding_round_type == "seed" || funding_round_type == "angel") {
+        return funding_round_type;
+    } else if (funding_round_type == "venture") {
+        if (funding_round_code.length == 1) {
+            return "series_" + funding_round_code.toLowerCase();
+        }
+    }
+}
+
 function has_overlapping_sets(selected_sets, actual_sets, match_all_sets) {
     var has_one_overlap = false;
     var has_entire_overlap = true;

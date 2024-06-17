@@ -59,17 +59,11 @@ import {
     }
 */
 // Generate local graph for test startup and round from investments.csv
-d3.csv("/data/bulk_export/investments.csv").then(function (investments_data) {
-    d3.csv("/data/bulk_export/funding_rounds.csv").then(function (funding_rounds_data) {
-        d3.csv("/data/bulk_export/organizations_cleaned.csv").then(function (organizations_data) {
-            d3.csv("/data/bulk_export/investors.csv").then(function (investors_data) {
-                console.log("loading...");
-                initialize_investments(investments_data, funding_rounds_data, organizations_data, investors_data);
-                console.log("Finished loading");
-                intialize();
-            });
-        });
-    });
+d3.csv("/data/investments.csv").then(function (investments_data) {
+    console.log("loading...");
+    initialize_investments(investments_data);
+    console.log("Finished loading");
+    intialize();
 });
 
 function intialize() {
@@ -478,7 +472,7 @@ function loadSelectedCategoryTable() {
 function loadCategorySelector() {
     if (selected_categories.length == 0) {
         // Will already exist if we loaded from permalink
-        selected_categories = company_to_categories[company];
+        selected_categories = Array.from(company_to_categories[company]);
     }
     const categories = Array.from(all_categories).sort();
     // Populate categories
